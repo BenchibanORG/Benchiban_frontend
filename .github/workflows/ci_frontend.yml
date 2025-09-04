@@ -1,36 +1,37 @@
-name: CI - Frontend
+name: CI Frontend - Build & SonarCloud Analysis
 
 on:
   push:
-    branches: [ "main" ]
+    branches:
+      - main # ou a branch principal que você estiver usando
   pull_request:
-    branches: [ "main" ]
+    types: [opened, synchronize, reopened]
 
 jobs:
-  build:
+  build-and-analyze:
+    name: Build and Analyze
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout do código
-        uses: actions/checkout@v3
-
-      - name: Configurar Node.js
-        uses: actions/setup-node@v3
+      - name: Checkout code
+        uses: actions/checkout@v4
         with:
-          node-version: 18
+          fetch-depth: 0 # Necessário para o SonarCloud analisar o histórico de commits
 
-      - name: Instalar dependências
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18' # Use a mesma versão do Node.js que você usa localmente
+          cache: 'npm'
+
+      - name: Install dependencies
         run: npm install
 
-      - name: Rodar testes
-        run: npm test -- --watchAll=false
+      # Opcional: Adicione um passo de teste se tiver testes configurados
+      # - name: Run tests
+      #   run: npm test -- --coverage
 
-      - name: Build do projeto
-        run: npm run build
-
-      # opcional: upload do build como artefato
-      - name: Salvar build como artefato
-        uses: actions/upload-artifact@v3
-        with:
-          name: build
-          path: build
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
