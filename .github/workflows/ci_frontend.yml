@@ -8,7 +8,7 @@ on:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-analyze: 
+  build-and-analyze:
     name: Build, Analyze and Scan
     runs-on: ubuntu-latest
     steps:
@@ -27,9 +27,7 @@ jobs:
         run: npm install
 
       - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5 # Usando a nova action recomendada
+        uses: SonarSource/sonarqube-scan-action@v5
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io
-          SONAR_PROJECT_KEY: BenchibanORG_Benchiban_frontend 
-          SONAR_ORGANIZATION: benchibanorg
