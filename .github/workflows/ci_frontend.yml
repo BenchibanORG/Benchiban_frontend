@@ -1,37 +1,35 @@
-name: CI Frontend - Build & SonarCloud Analysis
+name: CI Frontend - Build & SonarQube Analysis
 
 on:
   push:
     branches:
-      - main # ou a branch principal que você estiver usando
+      - main
   pull_request:
     types: [opened, synchronize, reopened]
 
 jobs:
-  build-and-analyze:
-    name: Build and Analyze
+  build-and-analyze: 
+    name: Build, Analyze and Scan
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0 # Necessário para o SonarCloud analisar o histórico de commits
+          fetch-depth: 0
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '18' # Use a mesma versão do Node.js que você usa localmente
+          node-version: '18'
           cache: 'npm'
 
       - name: Install dependencies
         run: npm install
 
-      # Opcional: Adicione um passo de teste se tiver testes configurados
-      # - name: Run tests
-      #   run: npm test -- --coverage
-
-      - name: SonarCloud Scan
-        uses: SonarSource/sonarcloud-github-action@master
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v5 # Usando a nova action recomendada
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: https://sonarcloud.io
+          SONAR_PROJECT_KEY: BenchibanORG_Benchiban_frontend 
+          SONAR_ORGANIZATION: benchibanorg
