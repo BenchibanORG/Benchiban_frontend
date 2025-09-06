@@ -4,7 +4,10 @@
   "description": "��#\u0000 \u0000B\u0000e\u0000n\u0000c\u0000h\u0000i\u0000b\u0000a\u0000n\u0000_\u0000f\u0000r\u0000o\u0000n\u0000t\u0000e\u0000n\u0000d\u0000\r\u0000 \u0000",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "eject": "react-scripts eject"
   },
   "repository": {
     "type": "git",
@@ -16,10 +19,25 @@
   "bugs": {
     "url": "https://github.com/BenchibanORG/Benchiban_frontend/issues"
   },
-  "homepage": "https://github.com/BenchibanORG/Benchiban_frontend#readme",
+  "homepage": ".",
   "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/material": "^7.3.2",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
     "react-scripts": "^5.0.1"
+  },
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
   }
 }
