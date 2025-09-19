@@ -1,4 +1,4 @@
-name: CI Frontend - Build & SonarQube Analysis
+name: CI Frontend - Build, Test & SonarQube Analysis
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   build-and-analyze:
-    name: Build, Analyze and Scan
+    name: Build, Test and Analyze
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -26,8 +26,25 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v5
+      - name: Run tests and generate coverage report
+        run: npm test --coverage --watchAll=false
+
+      # --- PASSO NOVO ADICIONADO ---
+      - name: Upload coverage reports to sonar-scanner
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+
+      # --- PASSO NOVO ADICIONADO ---
+      - name: Download coverage reports
+        uses: actions/download-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage
+
+      - name: SonarCloud Scan
+        uses: SonarSource/sonarcloud-github-action@master
         env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: https://sonarcloud.io
