@@ -1,31 +1,37 @@
 import axios from 'axios';
-import { login } from './api'; 
+// Importa as funções corretas
+import { registerUser, loginUser } from './api';
 
-// Simula o módulo 'axios'
 jest.mock('axios');
 
-describe('Função de Login', () => {
-  it('deve retornar dados do token em um login bem-sucedido', async () => {
-    // 1. Arrange
-    const email = 'teste@teste.com';
-    const password = '1897391837189';
-    const mockTokenData = { access_token: 'fake-jwt-token', token_type: 'bearer' };
+describe('Funções da API', () => {
+  afterEach(() => {
+    jest.clearAllMocks();
+  });
 
-    // Mock do axios simula uma resposta de sucesso
-    axios.post.mockResolvedValue({ data: mockTokenData });
-
-    // 2. Act
-    const result = await login(email, password);
-
-    // 3. Assert
-    // Verifica se o axios.post foi chamado com os dados corretos
-    expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/auth/login', {
-      email: email,
-      password: password,
+  describe('registerUser', () => {
+    it('deve registrar um usuário com sucesso', async () => {
+      const mockData = { id: 1, email: 'teste@teste.com' };
+      axios.post.mockResolvedValue({ data: mockData });
+      const result = await registerUser('teste@teste.com', '123');
+      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/auth/register', { email: 'teste@teste.com', password: '123' });
+      expect(result).toEqual(mockData);
     });
-    
-    // Verifica se o resultado da função é o que esperamos
-    expect(result).toEqual(mockTokenData);
-    
+  });
+
+  describe('loginUser', () => {
+    it('deve retornar dados do token em um login bem-sucedido', async () => {
+      const mockTokenData = { access_token: 'fake-jwt-token', token_type: 'bearer' };
+      axios.post.mockResolvedValue({ data: mockTokenData });
+
+      // Usa o nome correto da função
+      const result = await loginUser('teste@teste.com', '123');
+
+      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/auth/login', {
+        email: 'teste@teste.com',
+        password: '123',
+      });
+      expect(result).toEqual(mockTokenData);
+    });
   });
 });
