@@ -29,22 +29,11 @@ jobs:
       - name: Run tests and generate coverage report
         run: npm test --coverage --watchAll=false
 
-      # --- PASSO NOVO ADICIONADO ---
-      - name: Upload coverage reports to sonar-scanner
-        uses: actions/upload-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage
-
-      # --- PASSO NOVO ADICIONADO ---
-      - name: Download coverage reports
-        uses: actions/download-artifact@v4
-        with:
-          name: coverage-report
-          path: coverage
-
       - name: SonarCloud Scan
         uses: SonarSource/sonarcloud-github-action@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
