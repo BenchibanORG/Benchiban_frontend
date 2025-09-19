@@ -1,5 +1,5 @@
-import React, { useState } from 'react'; // 1. Importa o useState
-import { useNavigate } from 'react-router-dom'; // 2. Importa o hook para navegação
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   createTheme,
   ThemeProvider,
@@ -14,7 +14,7 @@ import {
   Alert
 } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import { registerUser } from '../services/api'; // 4. Importa nossa função da API
+import { registerUser } from '../services/api';
 
 const lightTheme = createTheme({
   palette: {
@@ -29,38 +29,39 @@ const lightTheme = createTheme({
 });
 
 function RegisterPage() {
-  // 5. Gerenciamento de estado para os campos do formulário e feedback
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const navigate = useNavigate(); // Hook para redirecionar o usuário
+  const navigate = useNavigate();
 
-  // 6. Função para lidar com a submissão do formulário
   const handleSubmit = async (event) => {
-    event.preventDefault(); // Previne o recarregamento padrão da página
-    setError(''); // Limpa erros anteriores
+    event.preventDefault();
+    setError('');
     setSuccess('');
 
-    // Validação simples
+    // Validação de formato de e-mail adicionada
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError('Por favor, digite um email válido.');
+      return;
+    }
+
     if (password !== confirmPassword) {
       setError('As senhas não coincidem!');
       return;
     }
 
     try {
-      // Chama a função da API
       await registerUser(email, password);
       setSuccess('Cadastro realizado com sucesso! Redirecionando para o login...');
       
-      // Redireciona para a página de login após 2 segundos
       setTimeout(() => {
         navigate('/login');
       }, 2000);
 
     } catch (err) {
-      // Captura o erro lançado pela nossa função da API
       setError(err.message);
     }
   };
@@ -68,19 +69,44 @@ function RegisterPage() {
   return (
     <ThemeProvider theme={lightTheme}>
       <CssBaseline />
-      <Container component="main" maxWidth="xs">
-        <Box>
-          <Typography component="h1" variant="h5">
+      <Container
+        component="main"
+        maxWidth="xs"
+        sx={{
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh',
+        }}
+      >
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            width: '100%',
+          }}
+        >
+          <Typography 
+            component="h1" 
+            variant="h5"
+            sx={{
+              fontWeight: 'bold',
+              letterSpacing: '0.1rem',
+              mb: 3,
+            }}
+          >
             CRIAR CONTA
           </Typography>
 
-          {/* 7. Formulário com `onSubmit` e campos controlados */}
           <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
             
             {/* Exibe a mensagem de erro, se houver */}
-            {error && <Alert severity="error" sx={{ mt: 2, width: '100%' }}>{error}</Alert>}
+            {error && <Alert severity="error" sx={{ my: 2, width: '100%' }}>{error}</Alert>}
+            
             {/* Exibe a mensagem de sucesso, se houver */}
-            {success && <Alert severity="success" sx={{ mt: 2, width: '100%' }}>{success}</Alert>}
+            {success && <Alert severity="success" sx={{ my: 2, width: '100%' }}>{success}</Alert>}
 
             <TextField
               margin="normal"
@@ -91,7 +117,7 @@ function RegisterPage() {
               name="email"
               variant="filled"
               value={email}
-              onChange={(e) => setEmail(e.target.value)} // Atualiza o estado
+              onChange={(e) => setEmail(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -102,7 +128,7 @@ function RegisterPage() {
               type="password"
               variant="filled"
               value={password}
-              onChange={(e) => setPassword(e.target.value)} // Atualiza o estado
+              onChange={(e) => setPassword(e.target.value)}
             />
             <TextField
               margin="normal"
@@ -113,11 +139,25 @@ function RegisterPage() {
               type="password"
               variant="filled"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)} // Atualiza o estado
+              onChange={(e) => setConfirmPassword(e.target.value)}
             />
-            <Button type="submit" fullWidth variant="contained" disableElevation>
+            
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              disableElevation
+              sx={{
+                mt: 3,
+                mb: 2,
+                py: 1.5,
+                textTransform: 'none',
+                fontSize: '1rem',
+              }}
+            >
               CADASTRAR
             </Button>
+            
             <Grid container justifyContent="flex-end">
               <Grid item>
                 <Link component={RouterLink} to="/login" variant="body2" sx={{ color: 'text.secondary' }}>
