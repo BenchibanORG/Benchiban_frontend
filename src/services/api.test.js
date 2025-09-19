@@ -8,7 +8,7 @@ describe('Função de Login', () => {
   it('deve retornar dados do token em um login bem-sucedido', async () => {
     // 1. Arrange
     const email = 'teste@teste.com';
-    const password = '123';
+    const password = '1897391837189';
     const mockTokenData = { access_token: 'fake-jwt-token', token_type: 'bearer' };
 
     // Mock do axios simula uma resposta de sucesso
