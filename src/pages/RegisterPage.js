@@ -1,32 +1,15 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
-  createTheme,
-  ThemeProvider,
-  CssBaseline,
-  Container,
   Box,
-  Typography,
   TextField,
   Button,
   Link,
   Grid,
   Alert
 } from '@mui/material';
-import { Link as RouterLink } from 'react-router-dom';
 import { registerUser } from '../services/api';
-
-const lightTheme = createTheme({
-  palette: {
-    mode: 'light',
-    primary: {
-      main: '#6c63ff',
-    },
-  },
-  typography: {
-    fontFamily: 'sans-serif',
-  },
-});
+import AuthLayout from '../components/AuthLayout'; // Importa o layout reutilizável
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -41,7 +24,7 @@ function RegisterPage() {
     setError('');
     setSuccess('');
 
-    // Validação de formato de e-mail adicionada
+    // Validação de formato de e-mail
     const emailRegex = /^(?=.{1,254}$)(?=.{1,64}@)[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!emailRegex.test(email)) {
       setError('Por favor, digite um email válido.');
@@ -67,108 +50,71 @@ function RegisterPage() {
   };
 
   return (
-    <ThemeProvider theme={lightTheme}>
-      <CssBaseline />
-      <Container
-        component="main"
-        maxWidth="xs"
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          justifyContent: 'center',
-          alignItems: 'center',
-          minHeight: '100vh',
-        }}
-      >
-        <Box
+    <AuthLayout title="CRIAR CONTA">
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
+        
+        {error && <Alert severity="error" sx={{ my: 2, width: '100%' }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ my: 2, width: '100%' }}>{success}</Alert>}
+
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="email"
+          label="Endereço de E-mail"
+          name="email"
+          variant="filled"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          name="password"
+          label="Senha"
+          type="password"
+          variant="filled"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          name="confirmPassword"
+          label="Confirmar Senha"
+          type="password"
+          variant="filled"
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+        
+        <Button
+          type="submit"
+          fullWidth
+          variant="contained"
+          disableElevation
           sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            width: '100%',
+            mt: 3,
+            mb: 2,
+            py: 1.5,
+            textTransform: 'none',
+            fontSize: '1rem',
           }}
         >
-          <Typography 
-            component="h1" 
-            variant="h5"
-            sx={{
-              fontWeight: 'bold',
-              letterSpacing: '0.1rem',
-              mb: 3,
-            }}
-          >
-            CRIAR CONTA
-          </Typography>
-
-          <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
-            
-            {/* Exibe a mensagem de erro, se houver */}
-            {error && <Alert severity="error" sx={{ my: 2, width: '100%' }}>{error}</Alert>}
-            
-            {/* Exibe a mensagem de sucesso, se houver */}
-            {success && <Alert severity="success" sx={{ my: 2, width: '100%' }}>{success}</Alert>}
-
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              id="email"
-              label="Endereço de E-mail"
-              name="email"
-              variant="filled"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="password"
-              label="Senha"
-              type="password"
-              variant="filled"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            <TextField
-              margin="normal"
-              required
-              fullWidth
-              name="confirmPassword"
-              label="Confirmar Senha"
-              type="password"
-              variant="filled"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-            />
-            
-            <Button
-              type="submit"
-              fullWidth
-              variant="contained"
-              disableElevation
-              sx={{
-                mt: 3,
-                mb: 2,
-                py: 1.5,
-                textTransform: 'none',
-                fontSize: '1rem',
-              }}
-            >
-              CADASTRAR
-            </Button>
-            
-            <Grid container justifyContent="flex-end">
-              <Grid item>
-                <Link component={RouterLink} to="/login" variant="body2" sx={{ color: 'text.secondary' }}>
-                  Já tem uma conta? Faça o login
-                </Link>
-              </Grid>
-            </Grid>
-          </Box>
-        </Box>
-      </Container>
-    </ThemeProvider>
+          CADASTRAR
+        </Button>
+        
+        <Grid container justifyContent="flex-end">
+          <Grid item>
+            <Link component={RouterLink} to="/login" variant="body2" sx={{ color: 'text.secondary' }}>
+              Já tem uma conta? Faça o login
+            </Link>
+          </Grid>
+        </Grid>
+      </Box>
+    </AuthLayout>
   );
 }
 

@@ -37,3 +37,4 @@ jobs:
         with:
           args: >
             -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
+            -Dsonar.coverage.exclusions=**/*.test.js,src/setupTests.js,src/reportWebVitals.js,src/index.js,src/App.js
