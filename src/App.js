@@ -1,9 +1,9 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
+import ResultsPage from './pages/ResultsPage';
 
 function App() {
   return (
@@ -16,7 +16,10 @@ function App() {
         <Route path="/register" element={<RegisterPage />} />
 
         {/* Rota para a página principal após o login */}
-        <Route path="/dashboard" element={<DashboardPage />} /> 
+        <Route path="/dashboard" element={<DashboardPage />} />
+
+        {/* Rota para a página que exibe os resultados da busca */}
+        <Route path="/results" element={<ResultsPage />} /> 
 
         {/* Rota padrão: redireciona para /login se nenhuma outra rota combinar */}
         <Route path="*" element={<LoginPage />} />
