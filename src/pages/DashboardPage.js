@@ -5,19 +5,19 @@ import GpuCard from '../components/GpuCard';
 // Dados temporários para as placas de vídeo
 const gpuData = [
   {
-    name: 'GPU Modelo X',
+    name: 'NVIDIA RTX 4090',
     description: 'Ideal para modelos de linguagem de grande escala e processamento intensivo.',
-    image: 'https://via.placeholder.com/300x200.png?text=GPU+Image'
+    image: 'https://picsum.photos/seed/rtx4090/300/200' // Imagem de exemplo 1
   },
   {
-    name: 'GPU Modelo Y',
+    name: 'AMD RX 7900 XTX',
     description: 'Ótimo custo-benefício para treinamento de redes neurais e inferência.',
-    image: 'https://via.placeholder.com/300x200.png?text=GPU+Image'
+    image: 'https://picsum.photos/seed/rx7900/300/200' // Imagem de exemplo 2
   },
   {
-    name: 'GPU Modelo Z',
+    name: 'NVIDIA RTX 4080',
     description: 'Performance de ponta para computação gráfica e aplicações de IA visual.',
-    image: 'https://via.placeholder.com/300x200.png?text=GPU+Image'
+    image: 'https://picsum.photos/seed/rtx4080/300/200' // Imagem de exemplo 3
   }
 ];
 
@@ -31,7 +31,10 @@ function DashboardPage() {
             variant="h2" 
             component="h1" 
             fontWeight="bold" 
-            sx={{ color: '#001f3f' }} // Tom de azul marinho
+            sx={{ 
+              color: '#001f3f',
+              fontFamily: 'Akira Expanded, sans-serif'
+              }}
           >
             Benchiban
           </Typography>
