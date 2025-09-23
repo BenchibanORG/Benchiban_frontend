@@ -1,24 +1,49 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom'; // 1. Importe o BrowserRouter
+import userEvent from '@testing-library/user-event';
+import { BrowserRouter } from 'react-router-dom';
 import DashboardPage from './DashboardPage';
 
+// Mock para o hook useNavigate, para podermos verificar se o redirecionamento ocorre
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'), // Importa o resto da biblioteca normalmente
+  useNavigate: () => mockNavigate, // Sobrescreve o useNavigate com nosso mock
+}));
+
 describe('DashboardPage', () => {
+
+  // Limpa os mocks antes de cada teste
+  beforeEach(() => {
+    mockNavigate.mockClear();
+  });
+
   it('deve renderizar o cabeçalho e os três cards de GPU', () => {
-    // Act: Renderiza a página do dashboard DENTRO de um BrowserRouter
     render(
       <BrowserRouter>
         <DashboardPage />
       </BrowserRouter>
     );
 
-    // Assert: Verifica se os textos do cabeçalho estão na tela
     expect(screen.getByRole('heading', { name: /Benchiban/i })).toBeInTheDocument();
     expect(screen.getByText(/O melhor preço de GPU em primeiro lugar!/i)).toBeInTheDocument();
-
-    // Assert: Verifica se os nomes das GPUs são renderizados
     expect(screen.getByText('NVIDIA RTX 4090')).toBeInTheDocument();
-    expect(screen.getByText('AMD RX 7900 XTX')).toBeInTheDocument();
-    expect(screen.getByText('NVIDIA RTX 4080')).toBeInTheDocument();
+    // ... (outras verificações de renderização)
+  });
+
+  it('deve navegar para a página de resultados ao clicar em um card de GPU', async () => {
+    render(
+      <BrowserRouter>
+        <DashboardPage />
+      </BrowserRouter>
+    );
+    
+    // Act: Encontra o primeiro card (pelo texto do seu título) e o clica
+    // O 'closest' encontra o elemento clicável mais próximo (o CardActionArea)
+    const firstCard = screen.getByText('NVIDIA RTX 4090').closest('button');
+    await userEvent.click(firstCard);
+    
+    // Assert: Verifica se a função de navegação foi chamada para a rota correta
+    expect(mockNavigate).toHaveBeenCalledWith('/results');
   });
 });

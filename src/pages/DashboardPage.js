@@ -3,6 +3,7 @@ import { Box, Container, Typography, Grid } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import GpuCard from '../components/GpuCard';
 
+// Dados temporários para as placas de vídeo
 const gpuData = [
   {
     name: 'NVIDIA RTX 4090',
@@ -39,8 +40,9 @@ function DashboardPage() {
             component="h1" 
             fontWeight="bold" 
             sx={{ 
-              color: '#001f3f'
-            }}
+              color: '#001f3f',
+              fontFamily: 'Urban Shadow, sans-serif' // Mantive a fonte personalizada
+              }}
           >
             Benchiban
           </Typography>
@@ -49,16 +51,17 @@ function DashboardPage() {
           </Typography>
         </Box>
 
+        {/* Grade de Placas de Vídeo */}
         <Grid container spacing={4} justifyContent="center">
           {gpuData.map((gpu, index) => (
             <Grid item key={index} xs={12} sm={6} md={4}>
-              <div onClick={() => handleCardClick(gpu.name)} style={{ cursor: 'pointer' }}>
-                <GpuCard
-                  name={gpu.name}
-                  description={gpu.description}
-                  image={gpu.image}
-                />
-              </div>
+              {/* CORREÇÃO: A div foi removida e o onClick é passado como prop */}
+              <GpuCard
+                name={gpu.name}
+                description={gpu.description}
+                image={gpu.image}
+                onClick={() => handleCardClick(gpu.name)}
+              />
             </Grid>
           ))}
         </Grid>
