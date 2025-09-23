@@ -1,10 +1,11 @@
 import React from 'react';
 import { Card, CardActionArea, CardMedia, CardContent, Typography } from '@mui/material';
 
-function GpuCard({ image, name, description }) {
+function GpuCard({ image, name, description, onClick }) {
   return (
     <Card sx={{ maxWidth: 345, borderRadius: 4, transition: '0.3s', '&:hover': { transform: 'scale(1.03)', boxShadow: 6 } }}>
-      <CardActionArea>
+      {/* Função onClick diretamente no CardActionArea */}
+      <CardActionArea onClick={onClick}>
         <CardMedia
           component="img"
           height="140"
