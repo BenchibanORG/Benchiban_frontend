@@ -88,8 +88,8 @@ function LoginPage() {
             control={<Checkbox value="remember" color="primary" />}
             label="Lembre de mim"
           />
-          <Link href="#" variant="body2" sx={{ color: 'text.secondary' }}>
-            Esqueceu a senha?
+          <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ color: 'text.secondary' }}>
+          Esqueceu a senha?
           </Link>
         </Box>
 

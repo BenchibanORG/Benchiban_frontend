@@ -4,6 +4,9 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ResultsPage from './pages/ResultsPage';
+import ForgotPasswordPage from './pages/ForgotPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+// -----------------------------------------
 
 function App() {
   return (
@@ -20,6 +23,11 @@ function App() {
 
         {/* Rota para a página que exibe os resultados da busca */}
         <Route path="/results" element={<ResultsPage />} /> 
+
+        {/* Rotas para redefinir senha */}
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        {/* ------------------------------------ */}
 
         {/* Rota padrão: redireciona para /login se nenhuma outra rota combinar */}
         <Route path="*" element={<LoginPage />} />
