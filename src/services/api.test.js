@@ -19,7 +19,7 @@ describe('Funções da API de Autenticação', () => {
 
       const result = await registerUser('teste@teste.com', '123');
       
-      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/auth/register', { email: 'teste@teste.com', password: '123' });
+      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/api/auth/register', { email: 'teste@teste.com', password: '123' });
       expect(result).toEqual(mockData);
     });
 
@@ -41,7 +41,7 @@ describe('Funções da API de Autenticação', () => {
 
       const result = await loginUser('teste@teste.com', '123');
 
-      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/auth/login', {
+      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/api/auth/login', {
         email: 'teste@teste.com',
         password: '123',
       });

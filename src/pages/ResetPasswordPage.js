@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import { Box, TextField, Button, Alert, Link } from '@mui/material';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Box, TextField, Button, Alert } from '@mui/material';
 import AuthLayout from '../components/AuthLayout';
-// Supondo que você criará uma função 'resetPassword' no futuro
-// import { resetPassword } from '../services/api'; 
+import { resetPassword } from '../services/api';
 
 function ResetPasswordPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -25,16 +28,25 @@ function ResetPasswordPage() {
       setError('As senhas não coincidem!');
       return;
     }
+    if (!token) {
+      setError('Token de redefinição ausente ou inválido. Por favor, solicite um novo link.');
+      return;
+    }
 
     try {
-      // A lógica para chamar a API de redefinição de senha virá aqui.
-      // const token = new URLSearchParams(window.location.search).get('token');
-      // await resetPassword(token, password);
-      console.log('Senha redefinida com sucesso (simulado)');
-      setSuccess('Sua senha foi redefinida com sucesso! Redirecionando...');
-      setTimeout(() => navigate('/login'), 2000);
+      setIsLoading(true);
+      const response = await resetPassword(token, password);
+      setSuccess(response.message + ' Redirecionando para o login...');
+      setTimeout(() => navigate('/login'), 3000);
     } catch (err) {
-      setError(err.message || 'Ocorreu um erro ao redefinir a senha.');
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError('Ocorreu um erro ao redefinir a senha. Tente novamente.');
+      }
+      console.error("Falha ao redefinir senha:", err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -75,8 +87,9 @@ function ResetPasswordPage() {
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2, py: 1.5 }}
+          disabled={isLoading}
         >
-          Salvar Nova Senha
+          {isLoading ? 'Salvando...' : 'Salvar Nova Senha'}
         </Button>
       </Box>
     </AuthLayout>

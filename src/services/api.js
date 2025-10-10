@@ -12,7 +12,7 @@ const API_URL = 'http://localhost:8000';
  */
 export const registerUser = async (email, password) => {
   try {
-    const response = await axios.post(`${API_URL}/auth/register`, {
+    const response = await axios.post(`${API_URL}/api/auth/register`, {
       email,
       password,
     });
@@ -32,17 +32,49 @@ export const registerUser = async (email, password) => {
  */
 export const loginUser = async (email, password) => {
   try {
-    // Faz uma requisição POST para o endpoint /auth/login
-    const response = await axios.post(`${API_URL}/auth/login`, {
+    const response = await axios.post(`${API_URL}/api/auth/login`, {
       email,
       password,
     });
-    // Se o login for bem-sucedido, retorna os dados (que contêm o token)
     return response.data;
   } catch (error) {
-    // Se o login falhar, extrai a mensagem de erro específica do backend
     const errorMessage = error.response?.data?.detail || 'Ocorreu um erro ao tentar fazer o login.';
-    // Lança um novo erro com essa mensagem para ser tratado no componente
     throw new Error(errorMessage);
+  }
+};
+
+/**
+ * Envia uma solicitação para iniciar o processo de redefinição de senha.
+ * @param {string} email - O email do usuário.
+ * @returns {Promise<object>} A resposta da API.
+ */
+export const forgotPassword = async (email) => {
+  try {
+    // --- CORREÇÃO AQUI ---
+    // Trocamos a chamada 'api.post' pela chamada correta 'axios.post' com a URL completa.
+    const response = await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
+    return response.data;
+  } catch (error) {
+    throw error;
+  }
+};
+
+/**
+ * Envia o token e a nova senha para efetivar a redefinição.
+ * @param {string} token - O token recebido por email.
+ * @param {string} newPassword - A nova senha digitada pelo usuário.
+ * @returns {Promise<object>} A resposta da API.
+ */
+export const resetPassword = async (token, newPassword) => {
+  try {
+    // --- CORREÇÃO AQUI ---
+    // Trocamos a chamada 'api.post' pela chamada correta 'axios.post' com a URL completa.
+    const response = await axios.post(`${API_URL}/api/auth/reset-password`, {
+      token: token,
+      new_password: newPassword,
+    });
+    return response.data;
+  } catch (error) {
+    throw error;
   }
 };
