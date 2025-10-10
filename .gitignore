@@ -21,3 +21,12 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Ignorar arquivos de teste JS
+**/*.test.js
+
+# Ignorar arquivos de teste Python
+*_test.py
+
+# Ignorar pasta de testes
+tests/

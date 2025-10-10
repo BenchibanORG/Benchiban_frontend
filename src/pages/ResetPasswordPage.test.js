@@ -79,8 +79,8 @@ describe('Página de Redefinir Senha', () => {
 
     renderWithRouter('/reset-password?token=invalid-token');
 
-    await user.type(screen.getByTestId('password-input'), 'qualquerSenha');
-    await user.type(screen.getByTestId('confirm-password-input'), 'qualquerSenha');
+    await user.type(screen.getByTestId('password-input'), 'qualquercoisa');
+    await user.type(screen.getByTestId('confirm-password-input'), 'qualquercoisa');
     await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
     
     // Verificamos se a mensagem de erro vinda da API é exibida
