@@ -1,6 +1,7 @@
 import axios from 'axios';
-// Importa as funções corretas
-import { registerUser, loginUser } from './api';
+// --- MELHORIA AQUI ---
+// Importamos todas as quatro funções para testá-las.
+import { registerUser, loginUser, forgotPassword, resetPassword } from './api';
 
 jest.mock('axios');
 
@@ -11,7 +12,6 @@ describe('Funções da API de Autenticação', () => {
     jest.clearAllMocks();
   });
 
-  // --- Testes para a função de REGISTRO ---
   describe('registerUser', () => {
     it('deve registrar um usuário com sucesso', async () => {
       const mockData = { id: 1, email: 'teste@teste.com' };
@@ -19,17 +19,14 @@ describe('Funções da API de Autenticação', () => {
 
       const result = await registerUser('teste@teste.com', '123');
       
-      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/auth/register', { email: 'teste@teste.com', password: '123' });
+      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/api/auth/register', { email: 'teste@teste.com', password: '123' });
       expect(result).toEqual(mockData);
     });
 
     it('deve lançar um erro quando o registro falhar no backend', async () => {
-      // Arrange: Prepara o cenário de falha com uma mensagem de erro
       const errorMessage = 'Email already registered';
-      // Simula a API retornando um erro, no formato que o FastAPI envia
       axios.post.mockRejectedValue({ response: { data: { detail: errorMessage } } });
 
-      // Act & Assert: Verifica se a chamada da função realmente lança uma exceção com a mensagem correta
       await expect(registerUser('existente@teste.com', 'senha123')).rejects.toThrow(errorMessage);
     });
   });
@@ -41,7 +38,7 @@ describe('Funções da API de Autenticação', () => {
 
       const result = await loginUser('teste@teste.com', '123');
 
-      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/auth/login', {
+      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/api/auth/login', {
         email: 'teste@teste.com',
         password: '123',
       });
@@ -49,12 +46,51 @@ describe('Funções da API de Autenticação', () => {
     });
 
     it('deve lançar um erro quando o login falhar', async () => {
-      // Arrange: Prepara o cenário de falha
       const errorMessage = 'Credenciais inválidas';
       axios.post.mockRejectedValue({ response: { data: { detail: errorMessage } } });
 
-      // Act & Assert: Verifica se a chamada da função lança a exceção esperada
       await expect(loginUser('errado@teste.com', 'senhaerrada')).rejects.toThrow(errorMessage);
+    });
+  });
+
+  describe('forgotPassword', () => {
+    it('deve enviar a solicitação com sucesso', async () => {
+      const mockResponse = { message: 'Link de redefinição enviado.' };
+      axios.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await forgotPassword('teste@exemplo.com');
+
+      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/api/auth/forgot-password', { email: 'teste@exemplo.com' });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('deve relançar um erro quando a API falhar', async () => {
+      const apiError = new Error('Erro de rede');
+      axios.post.mockRejectedValue(apiError);
+
+      await expect(forgotPassword('teste@exemplo.com')).rejects.toThrow('Erro de rede');
+    });
+  });
+
+  describe('resetPassword', () => {
+    it('deve redefinir a senha com sucesso', async () => {
+      const mockResponse = { message: 'Senha redefinida com sucesso.' };
+      axios.post.mockResolvedValue({ data: mockResponse });
+
+      const result = await resetPassword('token-valido', 'novaSenha123');
+
+      expect(axios.post).toHaveBeenCalledWith('http://localhost:8000/api/auth/reset-password', {
+        token: 'token-valido',
+        new_password: 'novaSenha123',
+      });
+      expect(result).toEqual(mockResponse);
+    });
+
+    it('deve relançar um erro quando a API falhar', async () => {
+      const apiError = new Error('Token inválido');
+      axios.post.mockRejectedValue(apiError);
+
+      await expect(resetPassword('token-invalido', 'novaSenha123')).rejects.toThrow('Token inválido');
     });
   });
 });

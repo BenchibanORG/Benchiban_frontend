@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { Box, TextField, Button, Alert, Link, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
 import AuthLayout from '../components/AuthLayout';
+import { forgotPassword } from '../services/api';
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -18,13 +20,24 @@ function ForgotPasswordPage() {
       setError('Por favor, digite um endereço de e-mail válido.');
       return;
     }
-    // ---------------------------------------------------
     
-    // LÓGICA DA API DO BACKEND (simulada por enquanto)
-    console.log(`Solicitando redefinição de senha para: ${email}`);
-    setSuccess('Se um usuário com este e-mail existir, um link de redefinição foi enviado.');
-    // Limpa o campo de e-mail após a submissão
-    setEmail(''); 
+    // --- LÓGICA DA API DO BACKEND ---
+    try {
+      setIsLoading(true); // Inicia o carregamento
+
+      const response = await forgotPassword(email);
+      
+      // Usamos a mensagem de sucesso que a API nos retorna.
+      setSuccess(response.message);
+      setEmail(''); // Limpa o campo de e-mail após a submissão
+
+    } catch (err) {
+      // Em caso de erro de rede ou do servidor, exibimos uma mensagem genérica.
+      setError('Ocorreu um erro. Por favor, tente novamente mais tarde.');
+      console.error("Falha na solicitação de redefinição de senha:", err); // Log para depuração
+    } finally {
+      setIsLoading(false); // Finaliza o carregamento, independentemente do resultado
+    }
   };
 
   return (
@@ -52,13 +65,15 @@ function ForgotPasswordPage() {
           onChange={(e) => setEmail(e.target.value)}
         />
         
+        {/* --- FEEDBACK VISUAL NO BOTÃO --- */}
         <Button
           type="submit"
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2, py: 1.5 }}
+          disabled={isLoading}
         >
-          Enviar Link de Redefinição
+          {isLoading ? 'Enviando...' : 'Enviar Link de Redefinição'}
         </Button>
 
         <Box sx={{ textAlign: 'center' }}>
