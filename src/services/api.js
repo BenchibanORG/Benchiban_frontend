@@ -50,8 +50,6 @@ export const loginUser = async (email, password) => {
  */
 export const forgotPassword = async (email) => {
   try {
-    // --- CORREÇÃO AQUI ---
-    // Trocamos a chamada 'api.post' pela chamada correta 'axios.post' com a URL completa.
     const response = await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
     return response.data;
   } catch (error) {
@@ -67,14 +65,24 @@ export const forgotPassword = async (email) => {
  */
 export const resetPassword = async (token, newPassword) => {
   try {
-    // --- CORREÇÃO AQUI ---
-    // Trocamos a chamada 'api.post' pela chamada correta 'axios.post' com a URL completa.
     const response = await axios.post(`${API_URL}/api/auth/reset-password`, {
       token: token,
       new_password: newPassword,
     });
     return response.data;
   } catch (error) {
+    throw error;
+  }
+};
+
+export const getProductComparison = async (query) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/products/comparison`, {
+      params: { q: query } // Passa a query string corretamente
+    });
+    return response.data; // Retorna a estrutura { results_by_source: {...}, overall_best_deal: {...} }
+  } catch (error) {
+    // Relança o erro para o componente tratar
     throw error;
   }
 };

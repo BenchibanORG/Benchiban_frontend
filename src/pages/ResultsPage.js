@@ -1,85 +1,119 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Container, Typography, CircularProgress } from '@mui/material'; // Grid não é mais necessário aqui
+import React from 'react';
+import { useLocation, Link as RouterLink } from 'react-router-dom';
+import { Box, Container, Typography, Alert, Button } from '@mui/material';
 import ResultCard from '../components/ResultsCard';
-import AuthLayout from '../components/AuthLayout';
-
-const mockResults = [
-  { site: 'Newegg', country: 'Estados Unidos', price: 9800.50, link: '#' },
-  { site: 'Mercado Livre', country: 'Brasil', price: 11500.00, link: '#' },
-  { site: 'Caseking', country: 'Europa', price: 10250.75, link: '#' },
-  { site: 'AliExpress', country: 'China', price: 9550.90, link: '#' },
-];
+import SourceResults from '../components/SourceResults';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 
 function ResultsPage() {
-  const [loading, setLoading] = useState(true);
-  const [results, setResults] = useState([]);
-  const [bestDeal, setBestDeal] = useState(null);
+  const location = useLocation();
+  const comparisonData = location.state?.data;
+  const query = location.state?.query || 'Busca';
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      const sortedResults = [...mockResults].sort((a, b) => a.price - b.price);
-      setBestDeal(sortedResults[0]);
-      setResults(sortedResults);
-      setLoading(false);
-    }, 3000); 
+  console.log("ResultsPage - Dados completos recebidos:", comparisonData);
 
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (loading) {
+  if (!comparisonData) {
+    console.error("ResultsPage - comparisonData está nulo ou indefinido!");
     return (
-      <AuthLayout title="BUSCANDO PREÇOS...">
-        <Box sx={{ display: 'flex', justifyContent: 'center', my: 10 }}>
-          <CircularProgress size={60} />
-        </Box>
-        <Typography variant="h6" align="center" color="text.secondary">
-          Estamos vasculhando a web em busca da melhor oferta para você!
-        </Typography>
-      </AuthLayout>
+      <Container maxWidth="md" sx={{ py: 4, textAlign: 'center' }}>
+        <Alert severity="error">
+          Erro: Não foi possível carregar os dados da comparação. Por favor, volte e tente novamente.
+        </Alert>
+        <Button
+          component={RouterLink}
+          to="/"
+          variant="outlined"
+          startIcon={<ArrowBackIcon />}
+          sx={{ mt: 2 }}
+        >
+          Voltar ao Dashboard
+        </Button>
+      </Container>
     );
   }
 
-  return (
-    <Box sx={{ backgroundColor: '#f0f2f5', minHeight: '100vh', py: 4 }}>
-      <Container maxWidth="md">
-        <Typography variant="h4" component="h1" gutterBottom align="center">
-          Resultado da Busca
-        </Typography>
+  const bestDeal = comparisonData.overall_best_deal;
 
-        <Box sx={{ width: '100%', textAlign: 'center', mb: 4, p: 2, backgroundColor: 'white', borderRadius: 2, boxShadow: 1 }}>
-          <Typography variant="h6" color="text.secondary">
-            Melhor preço encontrado em:
+  const normalizeDeal = (deal) => {
+    if (!deal) return null;
+    return {
+      site: deal.source || deal.site || 'Site desconhecido',
+      country: deal.country || 'País não informado',
+      price: deal.price_brl || deal.price || null,
+      link: deal.url || deal.link || '#',
+    };
+  };
+
+  const normalizedBestDeal = normalizeDeal(bestDeal);
+
+  console.log("ResultsPage - Objeto overall_best_deal normalizado:", normalizedBestDeal);
+
+  return (
+    <Container maxWidth="lg" sx={{ py: 4 }}>
+      {/* Botão de Nova Busca */}
+      <Button
+        component={RouterLink}
+        to="/"
+        variant="outlined"
+        startIcon={<ArrowBackIcon />}
+        sx={{ mb: 3 }}
+      >
+        Nova Busca
+      </Button>
+
+      <Typography variant="h4" component="h1" gutterBottom align="center">
+        Resultados para: {query}
+      </Typography>
+
+      {/* 1. Melhor Oferta Geral */}
+      {normalizedBestDeal ? (
+        <Box sx={{ textAlign: 'center', mb: 6 }}>
+          <Typography
+            variant="h5"
+            component="h2"
+            sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}
+          >
+            Melhor Preço Encontrado
           </Typography>
-          <Typography variant="h4" color="primary" fontWeight="bold">
-            {bestDeal.site} ({bestDeal.country})
-          </Typography>
+
+          {/* Card centralizado, mas com conteúdo alinhado à esquerda */}
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <ResultCard
+              site={normalizedBestDeal.site}
+              country={normalizedBestDeal.country}
+              price={normalizedBestDeal.price}
+              link={normalizedBestDeal.link}
+              isBestPrice={true}
+              sx={{
+                textAlign: 'left', // <-- garante que o conteúdo fique alinhado à esquerda
+                width: '100%',
+                maxWidth: 900,
+              }}
+            />
+          </Box>
         </Box>
-        
-        {/* --- LAYOUT CORRIGIDO AQUI --- */}
-        {/* Usamos um Box com Flexbox e a propriedade 'gap' para um espaçamento perfeito */}
-        <Box
-          sx={{
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            gap: 2, // Aplica um espaçamento de 16px (theme.spacing(2)) entre cada item
-          }}
-        >
-          {results.map((result, index) => (
-            // Este Box controla a largura máxima de cada card na lista
-            <Box key={index} sx={{ width: '100%' }}>
-              <ResultCard 
-                site={result.site}
-                country={result.country}
-                price={result.price}
-                link={result.link}
-                isBestPrice={result.site === bestDeal.site}
-              />
-            </Box>
-          ))}
-        </Box>
-      </Container>
-    </Box>
+      ) : (
+        <>
+          {console.warn("ResultsPage - overall_best_deal é 'falsy', renderizando Alert.")}
+          <Alert severity="warning" sx={{ mb: 4 }}>
+            Não foi possível determinar a melhor oferta geral (verifique a conversão de moeda ou se há ofertas disponíveis).
+          </Alert>
+        </>
+      )}
+
+      {/* 2. Resultados por Fonte */}
+      {Object.entries(comparisonData.results_by_source).map(([sourceName, items]) =>
+        items && items.length > 0 ? (
+          <SourceResults key={sourceName} sourceName={sourceName} items={items} />
+        ) : null
+      )}
+
+      {Object.values(comparisonData.results_by_source).every(list => list.length === 0) && (
+        <Typography align="center" color="text.secondary" sx={{ mt: 4 }}>
+          Nenhuma oferta encontrada para esta placa de vídeo nas fontes pesquisadas.
+        </Typography>
+      )}
+    </Container>
   );
 }
 

@@ -1,46 +1,73 @@
 import React from 'react';
-// A importação do 'Box' foi removida para corrigir o warning
-import { Card, CardContent, Typography, Button, Grid } from '@mui/material';
+import { Card, CardContent, Typography, Button, Box } from '@mui/material';
 
 function ResultCard({ site, country, price, link, isBestPrice = false }) {
   return (
-    <Card sx={{ 
-      border: isBestPrice ? '2px solid' : '1px solid',
-      borderColor: isBestPrice ? 'primary.main' : 'divider',
-      borderRadius: 2,
-      boxShadow: isBestPrice ? 4 : 1,
-      width: '100%' // Garante que o card ocupe o espaço disponível
-    }}>
-      <CardContent>
-        {/* Usamos um Grid container para alinhar os itens horizontalmente */}
-        <Grid container spacing={2} alignItems="center">
-          
-          {/* Coluna da Esquerda (7/12 de largura) */}
-          <Grid item xs={7}>
-            <Typography variant="h6" component="div">
-              {site}
-            </Typography>
-            <Typography sx={{ mb: 1.5 }} color="text.secondary">
-              {country}
-            </Typography>
-            <Typography variant="h4">
-              R$ {price.toFixed(2).replace('.', ',')}
-            </Typography>
-          </Grid>
-          
-          {/* Coluna da Direita (5/12 de largura) */}
-          <Grid item xs={5} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Button 
-              variant="contained" 
-              href={link} 
-              target="_blank"
-            >
-              Ver na Loja
-            </Button>
-          </Grid>
+    <Card
+      variant="outlined"
+      sx={{
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        p: 4,
+        borderColor: isBestPrice ? 'primary.main' : 'grey.300',
+        boxShadow: isBestPrice ? 3 : 1,
+        borderWidth: isBestPrice ? 2 : 1,
+        borderStyle: 'solid',
+        width: isBestPrice ? '100%' : 360, // 🔹 Mantém o tamanho total do card principal
+        maxWidth: isBestPrice ? '1100px' : 'auto', // 🔹 Controla largura máxima visual
+        mx: 'auto',
+        textAlign: isBestPrice ? 'left' : 'center',
+      }}
+    >
+      {/* Conteúdo do card (lado esquerdo) */}
+      <Box sx={{ flex: 1 }}>
+        <Typography
+          variant="h6"
+          sx={{
+            fontWeight: 'bold',
+            color: 'primary.main',
+            mb: 0.5,
+          }}
+        >
+          {site}
+        </Typography>
 
-        </Grid>
-      </CardContent>
+        <Typography variant="body2" color="text.secondary">
+          {country || 'País não informado'}
+        </Typography>
+
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 'bold',
+            mt: 1,
+          }}
+        >
+          {price ? `R$ ${price.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` : 'Preço indisponível'}
+        </Typography>
+      </Box>
+
+      {/* Botão (lado direito) */}
+      <Button
+        variant="contained"
+        href={link}
+        target="_blank"
+        rel="noopener noreferrer"
+        sx={{
+          ml: 3,
+          px: 3,
+          py: 1.4,
+          fontWeight: 'bold',
+          textTransform: 'none',
+          bgcolor: isBestPrice ? 'primary.main' : 'grey.700',
+          '&:hover': {
+            bgcolor: isBestPrice ? 'primary.dark' : 'grey.800',
+          },
+        }}
+      >
+        {isBestPrice ? 'Ver na Loja' : 'Ver Oferta'}
+      </Button>
     </Card>
   );
 }
