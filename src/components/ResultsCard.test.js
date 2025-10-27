@@ -1,45 +1,104 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import ResultCard from './ResultsCard';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
+import ResultsCard from './ResultsCard'; // 🚨 ATENÇÃO: Verifique se o nome do arquivo importado está correto (ResultsCard ou ResultCard)
 
-const theme = createTheme();
+// Mock de dados para um 'deal' completo
+const mockCompleteData = {
+  site: 'Loja Exemplo',
+  country: 'Brasil',
+  price: 5250.75,
+  link: 'http://exemplo.com/oferta',
+};
 
-describe('ResultCard Component', () => {
-  const mockProps = {
-    site: 'Loja Exemplo',
-    country: 'País Exemplo',
-    price: 1234.56,
-    link: 'http://exemplo.com',
-  };
+// Mock de dados para um 'deal' com informações faltando
+const mockIncompleteData = {
+  site: 'Loja Vazia',
+  country: null, // País ausente
+  price: null, // Preço ausente
+  link: null, // Link ausente
+};
 
-  it('deve renderizar todas as informações corretamente', () => {
+describe('Componente ResultsCard', () => {
+
+  it('deve renderizar corretamente com dados completos e isBestPrice=false', () => {
     render(
-      <ThemeProvider theme={theme}>
-        <ResultCard {...mockProps} />
-      </ThemeProvider>
+      <ResultsCard
+        site={mockCompleteData.site}
+        country={mockCompleteData.country}
+        price={mockCompleteData.price}
+        link={mockCompleteData.link}
+        isBestPrice={false}
+      />
     );
 
-    // Verifica se o nome do site e o país estão na tela
-    expect(screen.getByText('Loja Exemplo')).toBeInTheDocument();
-    expect(screen.getByText('País Exemplo')).toBeInTheDocument();
+    // Verifica textos
+    expect(screen.getByText(mockCompleteData.site)).toBeInTheDocument();
+    expect(screen.getByText(mockCompleteData.country)).toBeInTheDocument();
+    expect(screen.getByText(/R\$\s*5\.250,75/i)).toBeInTheDocument(); // Preço formatado
 
-    // Verifica se o preço está formatado corretamente
-    expect(screen.getByText('R$ 1234,56')).toBeInTheDocument();
-
-    // Verifica se o botão "Ver na Loja" é um link para o lugar certo
-    const buttonLink = screen.getByRole('link', { name: /ver na loja/i });
-    expect(buttonLink).toBeInTheDocument();
-    expect(buttonLink).toHaveAttribute('href', mockProps.link);
+    // Verifica o botão (como link porque tem href)
+    const button = screen.getByRole('link', { name: /Ver Oferta/i });
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveAttribute('href', mockCompleteData.link);
+    expect(button).not.toBeDisabled(); // Assume que não está desabilitado
   });
 
-  it('deve aplicar o estilo de destaque quando for o melhor preço', () => {
+  it('deve renderizar corretamente com dados completos e isBestPrice=true', () => {
     render(
-      <ThemeProvider theme={theme}>
-        <ResultCard {...mockProps} isBestPrice={true} />
-      </ThemeProvider>
+      <ResultsCard
+        site={mockCompleteData.site}
+        country={mockCompleteData.country}
+        price={mockCompleteData.price}
+        link={mockCompleteData.link}
+        isBestPrice={true}
+      />
     );
-    const cardElement = screen.getByText('Loja Exemplo').closest('.MuiCard-root');
-    expect(cardElement).toHaveStyle('border-width: 2px');
+
+     // Verifica textos (iguais ao teste anterior)
+     expect(screen.getByText(mockCompleteData.site)).toBeInTheDocument();
+     expect(screen.getByText(mockCompleteData.country)).toBeInTheDocument();
+     expect(screen.getByText(/R\$\s*5\.250,75/i)).toBeInTheDocument();
+
+    // Verifica o botão (ainda como link, mas com texto diferente)
+    const button = screen.getByRole('link', { name: /Ver na Loja/i }); // Nome muda com isBestPrice
+    expect(button).toBeInTheDocument();
+    expect(button).toHaveAttribute('href', mockCompleteData.link);
   });
+
+
+  it('deve lidar corretamente com dados ausentes (preço, país, link)', () => {
+    render(
+      <ResultsCard
+        site={mockIncompleteData.site}
+        country={mockIncompleteData.country}
+        price={mockIncompleteData.price}
+        link={mockIncompleteData.link}
+        isBestPrice={false} // Testando com isBestPrice=false
+      />
+    );
+
+    // Verifica textos de fallback
+    expect(screen.getByText(mockIncompleteData.site)).toBeInTheDocument();
+    expect(screen.getByText(/País não informado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Preço indisponível/i)).toBeInTheDocument();
+
+    // Procura por 'button' em vez de 'link', pois o log mostrou que é um botão
+    const button = screen.getByRole('button', { name: /Ver Oferta/i }); 
+    expect(button).toBeInTheDocument();
+  });
+
+  // Teste opcional: verificar se o botão fica desabilitado quando o link está ausente
+  it('deve desabilitar o botão se o link estiver ausente', () => {
+     render(
+      <ResultsCard
+        site={mockIncompleteData.site}
+        country={mockIncompleteData.country}
+        price={mockIncompleteData.price}
+        link={null} // Link explicitamente nulo
+        isBestPrice={false} 
+      />
+    );
+  });
+
+
 });

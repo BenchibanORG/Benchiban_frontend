@@ -5,7 +5,7 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ResultsPage from './pages/ResultsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage';
+import ResetPasswordPage from './pages/ResetPasswordPage'; 
 // -----------------------------------------
 
 function App() {
