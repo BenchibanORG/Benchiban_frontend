@@ -53,6 +53,7 @@ export const forgotPassword = async (email) => {
     const response = await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
     return response.data;
   } catch (error) {
+    // Relança o erro para o componente tratar
     throw error;
   }
 };
@@ -71,12 +72,20 @@ export const resetPassword = async (token, newPassword) => {
     });
     return response.data;
   } catch (error) {
+    // Relança o erro para o componente tratar
     throw error;
   }
 };
 
+/**
+ * Busca por um produto em todas as fontes configuradas no backend.
+ * Retorna os resultados agrupados por fonte e a melhor oferta geral.
+ * @param {string} query - O termo de busca para o produto.
+ * @returns {Promise<object>} Objeto com 'results_by_source' e 'overall_best_deal'.
+ */
 export const getProductComparison = async (query) => {
   try {
+    // Faz a chamada GET para o novo endpoint, passando a query como parâmetro
     const response = await axios.get(`${API_URL}/api/products/comparison`, {
       params: { q: query } // Passa a query string corretamente
     });
@@ -86,3 +95,4 @@ export const getProductComparison = async (query) => {
     throw error;
   }
 };
+

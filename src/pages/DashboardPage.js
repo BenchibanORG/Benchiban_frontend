@@ -1,64 +1,65 @@
-import React, { useState } from 'react'; // Adiciona useState
-import { Box, Container, Typography, Grid, CircularProgress, Alert } from '@mui/material'; // Adiciona CircularProgress e Alert
+import React, { useState } from 'react';
+import { Box, Container, Typography, Grid, CircularProgress, Alert } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import GpuCard from '../components/GpuCard';
 import { getProductComparison } from '../services/api';
+import imgRtx5090 from '../assets/images/rtx5090.jpg';
+import imgRtxA6000 from '../assets/images/rtxa6000.jpg';
+import imgW7900 from '../assets/images/amdw7900.jpg';
 
-// Dados temporários para as placas de vídeo
 const gpuData = [
   {
-    name: 'NVIDIA GeForce RTX 5090 32GB',
-    description: 'Ideal para laboratórios de pesquisa, universidades e empresas de alto desempenho.',
-    image: 'https://picsum.photos/seed/rtx4090/300/200'
+    name: 'NVIDIA RTX 5090 32GB',
+    description:
+      'A NVIDIA RTX 5090 de 32GB é uma das placas mais poderosas da atualidade, voltada tanto para gamers exigentes quanto para entusiastas de inteligência artificial. Seu grande destaque é a velocidade impressionante e a nova geração de memória GDDR7, que garante alto desempenho em treinos de IA e renderizações pesadas. Ideal para quem busca performance extrema em um computador pessoal, sem precisar investir em placas de uso corporativo.',
+    image: imgRtx5090,
   },
   {
     name: 'NVIDIA RTX A6000 48GB',
-    description: 'Desenvolvida para operações contínuas e ambientes de workstation, mantendo alto desempenho por longos períodos.',
-    image: 'https://picsum.photos/seed/rx7900/300/200'
+    description:
+      'A NVIDIA RTX A6000 de 48GB é uma placa voltada para profissionais que trabalham com projetos pesados e contínuos, como treinar modelos de IA avançados, renderizações 3D e simulações científicas. Sua principal vantagem é a estabilidade, funcionando por longos períodos sem perda de desempenho. Indicada para ambientes Linux e uso profissional intenso.',
+    image: imgRtxA6000,
   },
   {
-    name: 'NVIDIA Tesla A100 80GB GPU SXM4',
-    description: 'Performance de ponta para computação gráfica e aplicações de IA visual.',
-    image: 'https://picsum.photos/seed/rtx4080/300/200'
-  }
+    name: 'AMD Radeon PRO W7900 48GB',
+    description:
+      'A AMD Radeon PRO W7900 de 48GB se destaca pelo excelente custo-benefício entre as placas profissionais. Oferece a mesma quantidade de VRAM da A6000, mas com preço mais acessível. Ideal para pesquisadores e profissionais que precisam de estabilidade e eficiência energética em grandes cargas de trabalho.',
+    image: imgW7900,
+  },
 ];
 
 function DashboardPage() {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(false); // Estado de carregamento
-  const [error, setError] = useState(''); // Estado de erro
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   const handleCardClick = async (gpuName) => {
-    setIsLoading(true); // Inicia o carregamento
-    setError(''); // Limpa erros anteriores
-    console.log(`Buscando preços para: ${gpuName}`);
-    
+    setIsLoading(true);
+    setError('');
     try {
-      // Chama a função da API com o nome da GPU clicada
       const comparisonData = await getProductComparison(gpuName);
-      
-      // Navega para a página de resultados, passando os dados via state
-      // e também o nome da GPU para exibir como título
       navigate('/results', { state: { data: comparisonData, query: gpuName } });
-
     } catch (err) {
-      const errorMessage = err.response?.data?.detail || `Não foi possível buscar ofertas para ${gpuName}. Tente novamente.`;
+      const errorMessage =
+        err.response?.data?.detail || `Não foi possível buscar ofertas para ${gpuName}.`;
       setError(errorMessage);
-      console.error("Erro na busca comparativa:", err);
     } finally {
-      setIsLoading(false); // Finaliza o carregamento
+      setIsLoading(false);
     }
   };
 
   return (
-    <Box sx={{ backgroundColor: '#f0f2f5', minHeight: '100vh' }}>
-      <Container maxWidth="lg" sx={{ py: 4 }}>
-        <Box sx={{ textAlign: 'center', mb: 6 }}>
-          <Typography 
-            variant="h2" 
-            component="h1" 
-            fontWeight="bold" 
-            sx={{ color: '#001f3f', fontFamily: 'Urban Shadow, sans-serif' }}
+    <Box sx={{ backgroundColor: '#ffffffff', minHeight: '100vh' }}>
+      <Container maxWidth="xl" sx={{ py: 6 }}>
+        <Box sx={{ textAlign: 'center', mb: 8 }}>
+          <Typography
+            variant="h2"
+            fontWeight="bold"
+            sx={{
+              color: '#001f3f',
+              fontFamily: "'Noto Sans JP', sans-serif",
+              mb: 1,
+            }}
           >
             Benchiban
           </Typography>
@@ -67,21 +68,28 @@ function DashboardPage() {
           </Typography>
         </Box>
 
-        {/* Exibe o spinner de carregamento ou a mensagem de erro */}
-        {isLoading && <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}><CircularProgress /></Box>}
+        {isLoading && (
+          <Box sx={{ display: 'flex', justifyContent: 'center', my: 4 }}>
+            <CircularProgress />
+          </Box>
+        )}
         {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
 
-        <Grid container spacing={4} justifyContent="center">
+        <Grid container spacing={6} justifyContent="center">
           {gpuData.map((gpu, index) => (
-            <Grid item key={index} xs={12} sm={6} md={4}>
+            <Grid item key={index} xs={12} sm={6} md={6} lg={4}>
               <GpuCard
                 name={gpu.name}
                 description={gpu.description}
                 image={gpu.image}
-                // Desabilita o clique enquanto carrega para evitar múltiplas chamadas
-                onClick={() => !isLoading && handleCardClick(gpu.name)} 
-                // Adiciona um estilo visual para indicar que está carregando (opcional)
-                sx={{ opacity: isLoading ? 0.7 : 1, cursor: isLoading ? 'wait' : 'pointer' }}
+                onClick={() => !isLoading && handleCardClick(gpu.name)}
+                sx={{
+                  transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                  '&:hover': {
+                    transform: 'scale(1.03)',
+                    boxShadow: '0px 6px 18px rgba(0,0,0,0.15)',
+                  },
+                }}
               />
             </Grid>
           ))}

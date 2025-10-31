@@ -1,22 +1,51 @@
 import React from 'react';
-import { Card, CardActionArea, CardMedia, CardContent, Typography } from '@mui/material';
+import { Card, CardContent, CardMedia, Typography, CardActionArea } from '@mui/material';
 
-function GpuCard({ image, name, description, onClick }) {
+function GpuCard({ name, description, image, onClick, sx }) {
   return (
-    <Card sx={{ maxWidth: 345, borderRadius: 4, transition: '0.3s', '&:hover': { transform: 'scale(1.03)', boxShadow: 6 } }}>
-      {/* Função onClick diretamente no CardActionArea */}
+    <Card
+      sx={{
+        maxWidth: 420,
+        mx: 'auto',
+        borderRadius: 4,
+        overflow: 'hidden',
+        backgroundColor: '#fff',
+        height: '100%',
+        ...sx,
+      }}
+    >
       <CardActionArea onClick={onClick}>
         <CardMedia
           component="img"
-          height="140"
+          height="260"
           image={image}
           alt={name}
+          sx={{
+            objectFit: 'contain',
+            p: 2,
+            backgroundColor: '#ffffffff',
+          }}
         />
         <CardContent>
-          <Typography gutterBottom variant="h5" component="div">
+          <Typography
+            gutterBottom
+            variant="h6"
+            component="div"
+            fontWeight="bold"
+            sx={{ textAlign: 'center', color: '#001f3f' }}
+          >
             {name}
           </Typography>
-          <Typography variant="body2" color="text.secondary">
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            sx={{
+              textAlign: 'justify',
+              fontSize: '0.95rem',
+              lineHeight: 1.6,
+              mt: 1,
+            }}
+          >
             {description}
           </Typography>
         </CardContent>

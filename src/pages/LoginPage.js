@@ -1,52 +1,71 @@
 import React, { useState } from 'react';
 import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import {
-  Box,
-  TextField,
-  FormControlLabel,
-  Checkbox,
-  Button,
-  Link,
-  Grid,
-  Alert
-} from '@mui/material';
+import { Box, TextField, Button, Alert, Link, Grid, CircularProgress, Typography } from '@mui/material';
+import AuthLayout from '../components/AuthLayout';
 import { loginUser } from '../services/api';
-import AuthLayout from '../components/AuthLayout'; // Importa o novo layout
 
 function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  
   const navigate = useNavigate();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
+    setSuccess('');
 
-    // Validação de campos obrigatórios
     if (!email || !password) {
-      setError('Por favor, preencha todos os campos');
+      setError('Por favor, preencha o e-mail e a senha.');
       return;
     }
 
+    setIsLoading(true); // --- Inicia o carregamento
     try {
       const data = await loginUser(email, password);
-      
-      if (data.access_token) {
-        localStorage.setItem('authToken', data.access_token);
-        alert('Login bem-sucedido!');
-        navigate('/dashboard'); 
-      }
+      localStorage.setItem('token', data.access_token);
+      setSuccess('Login bem-sucedido! A redirecionar...'); // Mensagem de sucesso
+
+      // Navega para o Dashboard após 2 segundos
+      setTimeout(() => {
+        navigate('/dashboard'); // O 'isLoading' permanece true durante este tempo
+      }, 2000);
+
     } catch (err) {
-      setError(err.message);
-    }
+      setError(err.message || 'E-mail ou senha inválidos. Tente novamente.');
+      setIsLoading(false); 
+    } 
+
   };
 
+  const pageTitle = (
+    <Box sx={{ mb: 4, textAlign: 'center' }}>
+      <Typography 
+        variant="h2" 
+        component="h1" 
+        fontWeight="bold" 
+        sx={{ 
+          color: '#001f3f',
+          fontFamily: 'Urban Shadow, sans-serif'
+        }}
+      >
+        Benchiban
+      </Typography>
+      <Typography variant="h6" color="text.secondary">
+        O melhor preço de GPU em primeiro lugar!
+      </Typography>
+    </Box>
+  );
+
   return (
-    <AuthLayout title="LOGIN">
+    <AuthLayout title={pageTitle}>
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
         
-        {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
+        {error && <Alert severity="error" sx={{ my: 2, width: '100%' }}>{error}</Alert>}
+        {success && <Alert severity="success" sx={{ my: 2, width: '100%' }}>{success}</Alert>}
         
         <TextField
           margin="normal"
@@ -65,8 +84,8 @@ function LoginPage() {
           margin="normal"
           required
           fullWidth
-          name="senha"
-          label="Senha" 
+          name="password"
+          label="Senha"
           type="password"
           id="password"
           autoComplete="current-password"
@@ -74,44 +93,25 @@ function LoginPage() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
-
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            width: '100%',
-            mt: 1, 
-          }}
-        >
-          <FormControlLabel
-            control={<Checkbox value="remember" color="primary" />}
-            label="Lembre de mim"
-          />
-          <Link component={RouterLink} to="/forgot-password" variant="body2" sx={{ color: 'text.secondary' }}>
-          Esqueceu a senha?
-          </Link>
-        </Box>
-
+        
         <Button
           type="submit"
           fullWidth
           variant="contained"
-          disableElevation
-          sx={{
-            mt: 3,
-            mb: 2,
-            py: 1.5,
-            textTransform: 'none',
-            fontSize: '1rem',
-          }}
+          sx={{ mt: 3, mb: 2, py: 1.5 }}
+          disabled={isLoading}
         >
-          LOGIN
+          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'Login'}
         </Button>
-        <Grid container justifyContent="flex-end">
+        <Grid container>
+          <Grid item xs>
+            <Link component={RouterLink} to="/forgot-password" variant="body2">
+              Esqueceu a senha?
+            </Link>
+          </Grid>
           <Grid item>
-            <Link component={RouterLink} to="/register" variant="body2" sx={{ color: 'text.secondary' }}>
-              {"Ainda não tem Conta? Crie uma!"}
+            <Link component={RouterLink} to="/register" variant="body2">
+              {"Ainda não tem conta? Crie uma!"}
             </Link>
           </Grid>
         </Grid>
@@ -121,3 +121,4 @@ function LoginPage() {
 }
 
 export default LoginPage;
+
