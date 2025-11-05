@@ -53,7 +53,7 @@ function ResultsPage() {
       {/* Botão de Nova Busca */}
       <Button
         component={RouterLink}
-        to="/"
+        to="/dashboard"
         variant="outlined"
         startIcon={<ArrowBackIcon />}
         sx={{ mb: 3 }}
