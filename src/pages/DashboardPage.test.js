@@ -24,9 +24,9 @@ jest.mock('../components/GpuCard', () => (props) => (
 // --- Dados Mockados ---
 // CORREÇÃO: Usa os nomes EXATOS do array gpuData no componente
 const mockGpuData = [ 
- { name: 'NVIDIA GeForce RTX 5090 32GB' },
+ { name: 'NVIDIA RTX 5090 32GB' },
  { name: 'NVIDIA RTX A6000 48GB' },
- { name: 'NVIDIA Tesla A100 80GB GPU SXM4' }, // Corrigido para corresponder ao componente
+ { name: 'AMD Radeon PRO W7900 48GB' }, 
 ];
 const mockApiResponse = { // Simula a resposta da API
   results_by_source: { ebay: [{ title: 'Mock Item', price_brl: 100 }] },
