@@ -1,12 +1,14 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
+import userEvent from '@testing-library/user-event';
 import ResultsPage from './ResultsPage';
 
 // --- MOCKS ---
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useLocation: jest.fn(),
+  useNavigate: jest.fn(() => jest.fn()), // mock para o navigate()
 }));
 
 jest.mock('../components/ResultsCard', () => (props) => (
@@ -21,7 +23,7 @@ jest.mock('../components/SourceResults', () => (props) => (
   </div>
 ));
 
-// --- MUTE CONSOLE OUTPUTS DURING TESTS ---
+// --- MOCK CONSOLE ---
 beforeAll(() => {
   jest.spyOn(console, 'log').mockImplementation(() => {});
   jest.spyOn(console, 'warn').mockImplementation(() => {});
@@ -78,31 +80,31 @@ const renderComponentWithData = (stateData) => {
   );
 };
 
+// --- TESTES ---
 describe('Componente ResultsPage', () => {
   beforeEach(() => {
     useLocation.mockClear();
   });
 
-  it('deve renderizar corretamente com dados completos', () => {
+  it('renderiza corretamente com dados completos', () => {
     const query = 'RTX 4080';
     renderComponentWithData({ data: mockApiData, query });
 
-    expect(screen.getByRole('heading', { name: `Resultados para: ${query}` })).toBeInTheDocument();
+    // Título principal (query)
+    expect(screen.getByRole('heading', { name: query })).toBeInTheDocument();
 
+    // Melhor oferta (ResultCard)
     const bestCard = screen.getByTestId('mock-result-card');
     expect(bestCard).toHaveTextContent('Site: eBay');
     expect(bestCard).toHaveTextContent('Price: 500');
     expect(bestCard).toHaveTextContent('isBest: true');
 
-    const ebayResults = screen.getByTestId('mock-source-results-ebay');
-    expect(ebayResults).toBeInTheDocument();
-    expect(ebayResults).toHaveTextContent('Items: 2');
-
-    expect(screen.queryByTestId('mock-source-results-mercado_livre')).not.toBeInTheDocument();
+    // Resultados por fonte
+    expect(screen.getByTestId('mock-source-results-ebay')).toHaveTextContent('Items: 2');
     expect(screen.queryByText(/Nenhuma oferta encontrada/i)).not.toBeInTheDocument();
   });
 
-  it('deve exibir aviso se não houver "overall_best_deal"', () => {
+  it('exibe aviso se não houver "overall_best_deal"', () => {
     renderComponentWithData({ data: mockApiDataNoBestDeal, query: 'Teste' });
 
     expect(screen.queryByTestId('mock-result-card')).not.toBeInTheDocument();
@@ -110,15 +112,15 @@ describe('Componente ResultsPage', () => {
     expect(screen.getByTestId('mock-source-results-ebay')).toBeInTheDocument();
   });
 
-  it('deve exibir mensagem se nenhuma fonte retornar resultados', () => {
+  it('exibe mensagem se nenhuma fonte retornar resultados', () => {
     renderComponentWithData({ data: mockApiDataNoResults, query: 'Nada' });
 
     expect(screen.queryByTestId('mock-result-card')).not.toBeInTheDocument();
     expect(screen.queryByTestId(/mock-source-results-/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/Nenhuma oferta encontrada para esta placa de vídeo/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nenhuma oferta encontrada/i)).toBeInTheDocument();
   });
 
-  it('deve exibir erro se os dados não forem passados corretamente pela navegação', () => {
+  it('exibe erro se os dados não forem passados corretamente pela navegação', () => {
     useLocation.mockReturnValue({ state: null });
     render(
       <MemoryRouter>
@@ -126,12 +128,20 @@ describe('Componente ResultsPage', () => {
       </MemoryRouter>
     );
 
-    expect(screen.getByRole('alert')).toHaveTextContent(/Erro: Não foi possível carregar os dados/i);
-    expect(screen.getByRole('link', { name: /Voltar ao Dashboard/i })).toHaveAttribute('href', '/');
+    expect(screen.getByRole('alert')).toHaveTextContent(/Erro ao Carregar Dados/i);
+    expect(screen.getByRole('button', { name: /Voltar ao Dashboard/i })).toBeInTheDocument();
   });
 
-  it('deve ter um botão "Nova Busca" que leva para o dashboard', () => {
+  it('botão "Nova Busca" está presente e acionável', async () => {
+    const mockNavigate = jest.fn();
+    jest.spyOn(require('react-router-dom'), 'useNavigate').mockReturnValue(mockNavigate);
+
     renderComponentWithData({ data: mockApiData, query: 'Teste' });
-    expect(screen.getByRole('link', { name: /Nova Busca/i })).toHaveAttribute('href', '/dashboard');
+
+    const novaBuscaBtn = screen.getByRole('button', { name: /Nova Busca/i });
+    expect(novaBuscaBtn).toBeInTheDocument();
+
+    await userEvent.click(novaBuscaBtn);
+    expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 });

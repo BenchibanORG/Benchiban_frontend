@@ -5,32 +5,33 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ResultsPage from './pages/ResultsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage'; 
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import ProtectedRoute from './components/ProtectedRoute';
 // -----------------------------------------
 
 function App() {
   return (
     <Router>
       <Routes>
-        {/* Rota para a página de Login (será a página inicial) */}
+        {/* --- 2. ROTAS PÚBLICAS --- */}
+        {/* Estas rotas podem ser acedidas por qualquer pessoa */}
         <Route path="/login" element={<LoginPage />} />
-
-        {/* Rota para a página de Cadastro */}
         <Route path="/register" element={<RegisterPage />} />
-
-        {/* Rota para a página principal após o login */}
-        <Route path="/dashboard" element={<DashboardPage />} />
-
-        {/* Rota para a página que exibe os resultados da busca */}
-        <Route path="/results" element={<ResultsPage />} /> 
-
-        {/* Rotas para redefinir senha */}
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
-        {/* ------------------------------------ */}
 
-        {/* Rota padrão: redireciona para /login se nenhuma outra rota combinar */}
-        <Route path="*" element={<LoginPage />} />
+        {/* --- 3. ROTAS PROTEGIDAS --- */}
+        {/* Estas rotas só podem ser acedidas por utilizadores logados */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/results" element={<ResultsPage />} />
+          
+          {/* Se a sua Dashboard for também a página inicial, adicione-a aqui */}
+          <Route path="/" element={<DashboardPage />} />
+        </Route>
+        
+        {/* (Opcional: Adicionar uma rota 404 Not Found) */}
+        
       </Routes>
     </Router>
   );
