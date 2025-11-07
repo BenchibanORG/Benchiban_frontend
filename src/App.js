@@ -27,7 +27,7 @@ function App() {
           <Route path="/results" element={<ResultsPage />} />
           
           {/* Se a sua Dashboard for também a página inicial, adicione-a aqui */}
-          <Route path="/" element={<DashboardPage />} />
+          <Route path="/login" element={<LoginPage />} />
         </Route>
         
         {/* (Opcional: Adicionar uma rota 404 Not Found) */}

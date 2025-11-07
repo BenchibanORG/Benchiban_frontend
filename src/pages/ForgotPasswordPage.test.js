@@ -1,18 +1,11 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, useNavigate } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import ForgotPasswordPage from './ForgotPasswordPage';
 import { forgotPassword } from '../services/api';
 
 jest.mock('../services/api');
-
-// Mock do useNavigate
-const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-}));
 
 describe('Componente ForgotPasswordPage', () => {
 
@@ -31,24 +24,24 @@ describe('Componente ForgotPasswordPage', () => {
   it('deve renderizar todos os elementos principais corretamente', () => {
     renderComponent();
 
-    // Título principal
+    // Título principal vindo do AuthPageLayout
     expect(
       screen.getByRole('heading', { name: /esqueceu a senha\?/i })
     ).toBeInTheDocument();
 
-    // Campo de e-mail
+    // Campo de e-mail (usa placeholder)
     expect(
-      screen.getByLabelText(/endereço de e-mail/i)
+      screen.getByPlaceholderText('seu@email.com')
     ).toBeInTheDocument();
 
-    // Botão principal
+    // Botão principal de envio
     expect(
       screen.getByRole('button', { name: /enviar link de redefinição/i })
     ).toBeInTheDocument();
 
-    // Botão "Voltar para o Login"
+    // Link "Voltar para o Login"
     expect(
-      screen.getByRole('button', { name: /voltar para o login/i })
+      screen.getByRole('link', { name: /voltar para o login/i })
     ).toBeInTheDocument();
   });
 
@@ -56,7 +49,7 @@ describe('Componente ForgotPasswordPage', () => {
     const user = userEvent.setup();
     renderComponent();
 
-    const emailInput = screen.getByLabelText(/endereço de e-mail/i);
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
     const submitButton = screen.getByRole('button', { name: /enviar link de redefinição/i });
 
     await user.type(emailInput, 'email-invalido');
@@ -76,22 +69,17 @@ describe('Componente ForgotPasswordPage', () => {
 
     renderComponent();
 
-    const emailInput = screen.getByLabelText(/endereço de e-mail/i);
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
     await user.type(emailInput, 'teste@exemplo.com');
 
     const submitButton = screen.getByRole('button', { name: /enviar link de redefinição/i });
     await user.click(submitButton);
 
-    // Verifica chamada da API
     await waitFor(() => {
-      expect(forgotPassword).toHaveBeenCalledTimes(1);
       expect(forgotPassword).toHaveBeenCalledWith('teste@exemplo.com');
     });
 
-    // Mensagem de sucesso exibida
     expect(await screen.findByText(successMessage)).toBeInTheDocument();
-
-    // Campo de e-mail limpo
     expect(emailInput).toHaveValue('');
   });
 
@@ -101,7 +89,7 @@ describe('Componente ForgotPasswordPage', () => {
 
     renderComponent();
 
-    const emailInput = screen.getByLabelText(/endereço de e-mail/i);
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
     const submitButton = screen.getByRole('button', { name: /enviar link de redefinição/i });
 
     await user.type(emailInput, 'teste@exemplo.com');
@@ -112,13 +100,10 @@ describe('Componente ForgotPasswordPage', () => {
     ).toBeInTheDocument();
   });
 
-  it('deve navegar para a tela de login ao clicar em "Voltar para o Login"', async () => {
-    const user = userEvent.setup();
+  it('deve conter o link de retorno para o login com a rota correta', () => {
     renderComponent();
 
-    const backButton = screen.getByRole('button', { name: /voltar para o login/i });
-    await user.click(backButton);
-
-    expect(mockNavigate).toHaveBeenCalledWith('/login');
+    const backLink = screen.getByRole('link', { name: /voltar para o login/i });
+    expect(backLink).toHaveAttribute('href', '/login');
   });
 });

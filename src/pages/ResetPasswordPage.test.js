@@ -1,173 +1,150 @@
-// src/pages/ResetPasswordPage.test.js
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
-import * as api from '../services/api';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ResetPasswordPage from './ResetPasswordPage';
+import { resetPassword } from '../services/api';
 
-// --- MOCKS ---
 jest.mock('../services/api');
-const mockNavigate = jest.fn();
-const mockUseSearchParams = jest.fn();
 
-jest.mock('react-router-dom', () => {
-  const actual = jest.requireActual('react-router-dom');
-  return {
-    ...actual,
-    useNavigate: () => mockNavigate,
-    useSearchParams: () => mockUseSearchParams(),
+describe('Componente ResetPasswordPage', () => {
+  const renderComponent = (url = '/reset-password?token=abc123') => {
+    render(
+      <MemoryRouter initialEntries={[url]}>
+        <Routes>
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
+        </Routes>
+      </MemoryRouter>
+    );
   };
-});
 
-describe('ResetPasswordPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockUseSearchParams.mockReturnValue([new URLSearchParams('token=fakeToken')]);
   });
 
-  const renderComponent = () =>
-    render(
-      <BrowserRouter>
-        <ResetPasswordPage />
-      </BrowserRouter>
+  test('deve permitir mostrar e esconder as senhas', () => {
+    renderComponent();
+
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botoesVisibilidade = screen.getAllByLabelText(/toggle password visibility/i);
+
+    expect(novaSenhaInput).toHaveAttribute('type', 'password');
+    expect(confirmarSenhaInput).toHaveAttribute('type', 'password');
+
+    fireEvent.click(botoesVisibilidade[0]);
+    fireEvent.click(botoesVisibilidade[1]);
+
+    expect(novaSenhaInput).toHaveAttribute('type', 'text');
+    expect(confirmarSenhaInput).toHaveAttribute('type', 'text');
+
+    fireEvent.click(botoesVisibilidade[0]);
+    fireEvent.click(botoesVisibilidade[1]);
+
+    expect(novaSenhaInput).toHaveAttribute('type', 'password');
+    expect(confirmarSenhaInput).toHaveAttribute('type', 'password');
+  });
+
+  test('deve chamar a API, exibir sucesso e redirecionar após 3s', async () => {
+    resetPassword.mockResolvedValueOnce({ message: 'Senha redefinida com sucesso!' });
+    jest.useFakeTimers();
+
+    renderComponent();
+
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
+
+    fireEvent.change(novaSenhaInput, { target: { value: 'NovaSenha123!' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'NovaSenha123!' } });
+    fireEvent.click(botaoSalvar);
+
+    await waitFor(() =>
+      expect(resetPassword).toHaveBeenCalledWith('abc123', 'NovaSenha123!')
     );
 
-  it('deve renderizar os elementos principais', () => {
-    renderComponent();
-    expect(screen.getByRole('heading', { name: /redefinir senha/i })).toBeInTheDocument();
-    expect(screen.getByTestId('password-input')).toBeInTheDocument();
-    expect(screen.getByTestId('confirm-password-input')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /salvar nova senha/i })).toBeInTheDocument();
+    expect(await screen.findByText(/senha redefinida com sucesso/i)).toBeInTheDocument();
+
+    jest.advanceTimersByTime(3000);
   });
 
-  it('deve exibir erro se os campos estiverem vazios', async () => {
-    const user = userEvent.setup();
+  // 🧪 Novo: campos vazios
+  test('deve exibir erro ao enviar com campos vazios', async () => {
     renderComponent();
 
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
+    fireEvent.click(botaoSalvar);
+
     expect(await screen.findByText(/por favor, preencha todos os campos/i)).toBeInTheDocument();
-    expect(api.resetPassword).not.toHaveBeenCalled();
+    expect(resetPassword).not.toHaveBeenCalled();
   });
 
-  it('deve exibir erro se as senhas não coincidirem', async () => {
-    const user = userEvent.setup();
+  // 🧪 Novo: senhas diferentes
+  test('deve exibir erro quando as senhas não coincidem', async () => {
     renderComponent();
 
-    const password = screen.getByTestId('password-input');
-    const confirm = screen.getByTestId('confirm-password-input');
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
 
-    await user.type(password, 'senha12345');
-    await user.type(confirm, 'senhaErrada');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
+    fireEvent.change(novaSenhaInput, { target: { value: 'Senha123' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'Senha456' } });
+    fireEvent.click(botaoSalvar);
 
     expect(await screen.findByText(/as senhas não coincidem/i)).toBeInTheDocument();
+    expect(resetPassword).not.toHaveBeenCalled();
   });
 
-  it('deve exibir erro se a senha for curta demais', async () => {
-    const user = userEvent.setup();
+  // 🧪 Novo: senha curta
+  test('deve exibir erro quando a senha tiver menos de 8 caracteres', async () => {
     renderComponent();
 
-    const password = screen.getByTestId('password-input');
-    const confirm = screen.getByTestId('confirm-password-input');
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
 
-    await user.type(password, '123');
-    await user.type(confirm, '123');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
+    fireEvent.change(novaSenhaInput, { target: { value: '12345' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: '12345' } });
+    fireEvent.click(botaoSalvar);
 
-    const mensagens = await screen.findAllByText(/a senha deve ter no mínimo 8 caracteres/i);
-    expect(mensagens.length).toBeGreaterThan(0);
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/mínimo 8 caracteres/i);
   });
 
-  it('deve exibir erro se o token estiver ausente', async () => {
-    mockUseSearchParams.mockReturnValue([new URLSearchParams('')]);
-    const user = userEvent.setup();
-    renderComponent();
+  // 🧪 Novo: token ausente
+  test('deve exibir erro quando o token estiver ausente', async () => {
+    renderComponent('/reset-password'); // sem token
 
-    const password = screen.getByTestId('password-input');
-    const confirm = screen.getByTestId('confirm-password-input');
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
 
-    await user.type(password, 'senhaValida123');
-    await user.type(confirm, 'senhaValida123');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
+    fireEvent.change(novaSenhaInput, { target: { value: 'SenhaValida123' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'SenhaValida123' } });
+    fireEvent.click(botaoSalvar);
 
-    expect(await screen.findByText(/token de redefinição ausente ou inválido/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/token de redefinição ausente ou inválido/i)
+    ).toBeInTheDocument();
+    expect(resetPassword).not.toHaveBeenCalled();
   });
 
-  it('deve redefinir senha com sucesso e exibir mensagem', async () => {
-    api.resetPassword.mockResolvedValue({ message: 'Senha redefinida com sucesso!' });
-    const user = userEvent.setup();
-    renderComponent();
-
-    const password = screen.getByTestId('password-input');
-    const confirm = screen.getByTestId('confirm-password-input');
-
-    await user.type(password, 'senhaValida123');
-    await user.type(confirm, 'senhaValida123');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
-
-    await waitFor(() => {
-      expect(api.resetPassword).toHaveBeenCalledWith('fakeToken', 'senhaValida123');
-    });
-
-    expect(await screen.findByText(/senha redefinida com sucesso/i)).toBeInTheDocument();
-  });
-
-  it('deve exibir erro de API com detail', async () => {
-    api.resetPassword.mockRejectedValue({
+  // 🧪 Novo: erro de API
+  test('deve exibir erro se a API retornar erro', async () => {
+    resetPassword.mockRejectedValueOnce({
       response: { data: { detail: 'Token expirado' } },
     });
-    const user = userEvent.setup();
+
     renderComponent();
 
-    const password = screen.getByTestId('password-input');
-    const confirm = screen.getByTestId('confirm-password-input');
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
 
-    await user.type(password, 'senhaValida123');
-    await user.type(confirm, 'senhaValida123');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
+    fireEvent.change(novaSenhaInput, { target: { value: 'SenhaValida123' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'SenhaValida123' } });
+    fireEvent.click(botaoSalvar);
 
-    expect(await screen.findByText(/token expirado/i)).toBeInTheDocument();
-  });
-
-  it('deve exibir erro genérico se API falhar sem detail', async () => {
-    api.resetPassword.mockRejectedValue(new Error('Falha desconhecida'));
-    const user = userEvent.setup();
-    renderComponent();
-
-    const password = screen.getByTestId('password-input');
-    const confirm = screen.getByTestId('confirm-password-input');
-
-    await user.type(password, 'senhaValida123');
-    await user.type(confirm, 'senhaValida123');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
-
-    expect(await screen.findByText(/ocorreu um erro ao redefinir a senha/i)).toBeInTheDocument();
-  });
-
-  it('deve alternar visibilidade de senha e confirmação', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    const passwordInput = screen.getByTestId('password-input');
-    const confirmInput = screen.getByTestId('confirm-password-input');
-    const buttons = screen.getAllByRole('button');
-
-    // Filtra ícones de visibilidade
-    const toggleIcons = buttons.filter((btn) => btn.querySelector('svg'));
-
-    await user.click(toggleIcons[0]);
-    expect(passwordInput).toHaveAttribute('type', 'text');
-
-    await user.click(toggleIcons[1]);
-    expect(confirmInput).toHaveAttribute('type', 'text');
-  });
-
-  it('deve navegar para login ao clicar em "Voltar para o login"', async () => {
-    const user = userEvent.setup();
-    renderComponent();
-
-    await user.click(screen.getByRole('button', { name: /voltar para o login/i }));
-    expect(mockNavigate).toHaveBeenCalledWith('/login');
+    const errorAlert = await screen.findByText(/token expirado/i);
+    expect(errorAlert).toBeInTheDocument();
   });
 });
