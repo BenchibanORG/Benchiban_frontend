@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
-import { Box, TextField, Link, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import AuthPageLayout from '../components/AuthPageLayout';
+import { Link, Typography } from '@mui/material';
 import { forgotPassword } from '../services/api';
+import AuthPageLayout from '../components/AuthPageLayout';
 import AuthFormWrapper from '../components/AuthFormWrapper';
+// Importa os novos componentes
+import StyledAuthTextField from '../components/StyledAuthTextField';
+import { useAuthSubmit } from '../hooks/useAuthSubmit'; // Embora não o usemos, é bom ver a consistência
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -11,6 +14,9 @@ function ForgotPasswordPage() {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Esta página é um pouco diferente (não redireciona),
+  // então mantemos a lógica de handleSubmit nela, mas ainda usamos os componentes
+  // reutilizáveis para o formulário.
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -32,21 +38,8 @@ function ForgotPasswordPage() {
     }
   };
 
-  // Componente de link inferior
   const bottomLink = (
-    <Link
-      component={RouterLink}
-      to="/login"
-      sx={{
-        color: '#001f3f',
-        fontWeight: 600,
-        textDecoration: 'none',
-        '&:hover': {
-          color: '#003d7a',
-          textDecoration: 'underline',
-        },
-      }}
-    >
+    <Link component={RouterLink} to="/login" sx={{ color: '#001f3f', fontWeight: 600, textDecoration: 'none', '&:hover': { color: '#003d7a', textDecoration: 'underline' } }}>
       Voltar para o Login
     </Link>
   );
@@ -64,31 +57,17 @@ function ForgotPasswordPage() {
         success={success}
         bottomLink={bottomLink}
       >
-        {/* Campo único do formulário */}
-        <Box sx={{ mb: 3 }}>
-          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
-            Endereço de E-mail
-          </Typography>
-          <TextField
-            required
-            fullWidth
-            id="email"
-            name="email"
-            autoComplete="email"
-            autoFocus
-            placeholder="seu@email.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                bgcolor: '#f8fafc',
-                borderRadius: 2,
-                '&:hover fieldset': { borderColor: '#001f3f' },
-                '&.Mui-focused fieldset': { borderColor: '#001f3f', borderWidth: 2 },
-              },
-            }}
-          />
-        </Box>
+        {/* --- CÓDIGO REDUZIDO --- */}
+        <StyledAuthTextField
+          label="Endereço de E-mail"
+          id="email"
+          name="email"
+          autoComplete="email"
+          autoFocus
+          placeholder="seu@email.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
       </AuthFormWrapper>
     </AuthPageLayout>
   );
