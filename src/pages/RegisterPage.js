@@ -3,17 +3,15 @@ import { useNavigate, Link as RouterLink } from 'react-router-dom';
 import {
   Box,
   TextField,
-  Button,
   Link,
-  Alert,
   Typography,
   InputAdornment,
-  IconButton,
-  CircularProgress
+  IconButton
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { registerUser } from '../services/api';
 import AuthPageLayout from '../components/AuthPageLayout';
+import AuthFormWrapper from '../components/AuthFormWrapper';
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
@@ -36,18 +34,14 @@ function RegisterPage() {
       setError('Por favor, digite um email válido.');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('As senhas não coincidem!');
       return;
     }
-
     setIsLoading(true);
-
     try {
       await registerUser(email, password);
       setSuccess('Cadastro realizado com sucesso! Redirecionando para o login...');
-      
       setTimeout(() => {
         navigate('/login');
       }, 2000);
@@ -57,28 +51,44 @@ function RegisterPage() {
     }
   };
 
+  // Componente de link inferior
+  const bottomLink = (
+    <Typography variant="body2" color="text.secondary">
+      Já tem uma conta?{' '}
+      <Link
+        component={RouterLink}
+        to="/login"
+        sx={{
+          color: '#001f3f',
+          fontWeight: 600,
+          textDecoration: 'none',
+          '&:hover': {
+            color: '#003d7a',
+            textDecoration: 'underline',
+          },
+        }}
+      >
+        Faça o login
+      </Link>
+    </Typography>
+  );
+
   return (
     <AuthPageLayout
       title="Crie sua conta"
       subtitle="Preencha os dados abaixo para começar"
     >
-      <Box component="form" onSubmit={handleSubmit} noValidate>
-        {error && (
-          <Alert severity="error" sx={{ mb: 3 }}>
-            {error}
-          </Alert>
-        )}
-        {success && (
-          <Alert severity="success" sx={{ mb: 3 }}>
-            {success}
-          </Alert>
-        )}
-
+      <AuthFormWrapper
+        onSubmit={handleSubmit}
+        buttonText="CRIAR CONTA"
+        isLoading={isLoading}
+        error={error}
+        success={success}
+        bottomLink={bottomLink}
+      >
+        {/* Campos únicos do formulário de registo */}
         <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="body2"
-            sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}
-          >
+          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
             Endereço de E-mail
           </Typography>
           <TextField
@@ -95,23 +105,15 @@ function RegisterPage() {
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#f8fafc',
                 borderRadius: 2,
-                '&:hover fieldset': {
-                  borderColor: '#001f3f',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#001f3f',
-                  borderWidth: 2,
-                },
+                '&:hover fieldset': { borderColor: '#001f3f' },
+                '&.Mui-focused fieldset': { borderColor: '#001f3f', borderWidth: 2 },
               },
             }}
           />
         </Box>
 
         <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="body2"
-            sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}
-          >
+          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
             Senha
           </Typography>
           <TextField
@@ -141,23 +143,15 @@ function RegisterPage() {
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#f8fafc',
                 borderRadius: 2,
-                '&:hover fieldset': {
-                  borderColor: '#001f3f',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#001f3f',
-                  borderWidth: 2,
-                },
+                '&:hover fieldset': { borderColor: '#001f3f' },
+                '&.Mui-focused fieldset': { borderColor: '#001f3f', borderWidth: 2 },
               },
             }}
           />
         </Box>
 
         <Box sx={{ mb: 3 }}>
-          <Typography
-            variant="body2"
-            sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}
-          >
+          <Typography variant="body2" sx={{ fontWeight: 600, color: 'text.primary', mb: 1 }}>
             Confirmar Senha
           </Typography>
           <TextField
@@ -187,97 +181,13 @@ function RegisterPage() {
               '& .MuiOutlinedInput-root': {
                 bgcolor: '#f8fafc',
                 borderRadius: 2,
-                '&:hover fieldset': {
-                  borderColor: '#001f3f',
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: '#001f3f',
-                  borderWidth: 2,
-                },
+                '&:hover fieldset': { borderColor: '#001f3f' },
+                '&.Mui-focused fieldset': { borderColor: '#001f3f', borderWidth: 2 },
               },
             }}
           />
         </Box>
-
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          disabled={isLoading}
-          sx={{
-            py: 1.8,
-            borderRadius: 2,
-            bgcolor: '#001f3f',
-            fontWeight: 600,
-            fontSize: '1rem',
-            textTransform: 'none',
-            boxShadow: '0 4px 12px rgba(0, 31, 63, 0.3)',
-            '&:hover': {
-              bgcolor: '#003d7a',
-              boxShadow: '0 6px 16px rgba(0, 31, 63, 0.4)',
-              transform: 'translateY(-1px)',
-            },
-            '&:active': {
-              transform: 'translateY(0)',
-            },
-            transition: 'all 0.2s',
-          }}
-        >
-          {isLoading ? <CircularProgress size={24} color="inherit" /> : 'CRIAR CONTA'}
-        </Button>
-
-        <Box
-          sx={{
-            position: 'relative',
-            my: 3,
-            '&::before': {
-              content: '""',
-              position: 'absolute',
-              top: '50%',
-              left: 0,
-              right: 0,
-              height: '1px',
-              bgcolor: 'grey.300',
-            },
-          }}
-        >
-          <Typography
-            variant="body2"
-            sx={{
-              position: 'relative',
-              display: 'inline-block',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              bgcolor: 'white',
-              px: 2,
-              color: 'text.secondary',
-            }}
-          >
-            ou
-          </Typography>
-        </Box>
-
-        <Box sx={{ textAlign: 'center' }}>
-          <Typography variant="body2" color="text.secondary">
-            Já tem uma conta?{' '}
-            <Link
-              component={RouterLink}
-              to="/login"
-              sx={{
-                color: '#001f3f',
-                fontWeight: 600,
-                textDecoration: 'none',
-                '&:hover': {
-                  color: '#003d7a',
-                  textDecoration: 'underline',
-                },
-              }}
-            >
-              Faça o login
-            </Link>
-          </Typography>
-        </Box>
-      </Box>
+      </AuthFormWrapper>
     </AuthPageLayout>
   );
 }
