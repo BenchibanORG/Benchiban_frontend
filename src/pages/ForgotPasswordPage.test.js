@@ -4,10 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import ForgotPasswordPage from './ForgotPasswordPage';
 import { forgotPassword } from '../services/api';
+
 jest.mock('../services/api');
 
-describe('ForgotPasswordPage', () => {
-  
+describe('Componente ForgotPasswordPage', () => {
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -20,66 +21,89 @@ describe('ForgotPasswordPage', () => {
     );
   };
 
-  it('deve renderizar todos os elementos corretamente', () => {
+  it('deve renderizar todos os elementos principais corretamente', () => {
     renderComponent();
-    expect(screen.getByRole('heading', { name: /esqueceu a senha/i })).toBeInTheDocument();
-    expect(screen.getByLabelText(/endereço de e-mail/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /enviar link de redefinição/i })).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /voltar para o login/i })).toBeInTheDocument();
+
+    // Título principal vindo do AuthPageLayout
+    expect(
+      screen.getByRole('heading', { name: /esqueceu a senha\?/i })
+    ).toBeInTheDocument();
+
+    // Campo de e-mail (usa placeholder)
+    expect(
+      screen.getByPlaceholderText('seu@email.com')
+    ).toBeInTheDocument();
+
+    // Botão principal de envio
+    expect(
+      screen.getByRole('button', { name: /enviar link de redefinição/i })
+    ).toBeInTheDocument();
+
+    // Link "Voltar para o Login"
+    expect(
+      screen.getByRole('link', { name: /voltar para o login/i })
+    ).toBeInTheDocument();
   });
 
-  it('deve exibir um erro se o e-mail for inválido', async () => {
+  it('deve exibir erro se o e-mail for inválido', async () => {
     const user = userEvent.setup();
     renderComponent();
-    
-    const emailInput = screen.getByLabelText(/endereço de e-mail/i);
-    await user.type(emailInput, 'email-invalido');
 
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
     const submitButton = screen.getByRole('button', { name: /enviar link de redefinição/i });
+
+    await user.type(emailInput, 'email-invalido');
     await user.click(submitButton);
 
-    expect(await screen.findByText(/por favor, digite um endereço de e-mail válido/i)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/por favor, digite um endereço de e-mail válido/i)
+    ).toBeInTheDocument();
+
     expect(forgotPassword).not.toHaveBeenCalled();
   });
 
-  it('deve chamar a API e exibir a mensagem de sucesso ao submeter um e-mail válido', async () => {
+  it('deve chamar a API e exibir mensagem de sucesso ao submeter um e-mail válido', async () => {
     const user = userEvent.setup();
     const successMessage = 'Se um usuário com este e-mail existir, um link de redefinição foi enviado.';
     forgotPassword.mockResolvedValue({ message: successMessage });
-    
+
     renderComponent();
 
-    const emailInput = screen.getByLabelText(/endereço de e-mail/i);
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
     await user.type(emailInput, 'teste@exemplo.com');
 
     const submitButton = screen.getByRole('button', { name: /enviar link de redefinição/i });
     await user.click(submitButton);
 
-    // Espera a API ser chamada e verifica se foi com os argumentos corretos
     await waitFor(() => {
-      expect(forgotPassword).toHaveBeenCalledTimes(1);
       expect(forgotPassword).toHaveBeenCalledWith('teste@exemplo.com');
     });
 
-    // Verifica se a mensagem de sucesso vinda da API é exibida
     expect(await screen.findByText(successMessage)).toBeInTheDocument();
-    // Verifica se o campo foi limpo após o envio
     expect(emailInput).toHaveValue('');
   });
 
-  it('deve exibir uma mensagem de erro genérica se a API falhar', async () => {
+  it('deve exibir mensagem de erro genérica se a API falhar', async () => {
     const user = userEvent.setup();
     forgotPassword.mockRejectedValue(new Error('Erro de rede'));
 
     renderComponent();
 
-    const emailInput = screen.getByLabelText(/endereço de e-mail/i);
-    await user.type(emailInput, 'teste@exemplo.com');
-
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
     const submitButton = screen.getByRole('button', { name: /enviar link de redefinição/i });
+
+    await user.type(emailInput, 'teste@exemplo.com');
     await user.click(submitButton);
-    
-    // Verifica se a mensagem de erro genérica do 'catch' é exibida
-    expect(await screen.findByText(/Ocorreu um erro. Por favor, tente novamente mais tarde./i)).toBeInTheDocument();
+
+    expect(
+      await screen.findByText(/ocorreu um erro\. por favor, tente novamente mais tarde\./i)
+    ).toBeInTheDocument();
+  });
+
+  it('deve conter o link de retorno para o login com a rota correta', () => {
+    renderComponent();
+
+    const backLink = screen.getByRole('link', { name: /voltar para o login/i });
+    expect(backLink).toHaveAttribute('href', '/login');
   });
 });

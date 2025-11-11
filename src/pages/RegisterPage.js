@@ -1,120 +1,123 @@
 import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
-import {
-  Box,
-  TextField,
-  Button,
-  Link,
-  Grid,
-  Alert
-} from '@mui/material';
+import { Link as RouterLink } from 'react-router-dom';
+import { Link, Typography, InputAdornment, IconButton } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { registerUser } from '../services/api';
-import AuthLayout from '../components/AuthLayout'; // Importa o layout reutilizável
+import AuthPageLayout from '../components/AuthPageLayout';
+import AuthFormWrapper from '../components/AuthFormWrapper';
+// Importa os novos componentes
+import StyledAuthTextField from '../components/StyledAuthTextField';
+import { useAuthSubmit } from '../hooks/useAuthSubmit';
 
 function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleSubmit = async (event) => {
+  // Usa o Hook personalizado
+  const { isLoading, error, success, handleSubmit, setError } = useAuthSubmit(
+    registerUser,
+    '/login',
+    'Cadastro realizado com sucesso! Redirecionando para o login...'
+  );
+
+  const handleLocalSubmit = (event) => {
     event.preventDefault();
-    setError('');
-    setSuccess('');
-
-    // Validação de formato de e-mail
     const emailRegex = /^(?=.{1,254}$)(?=.{1,64}@)[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!emailRegex.test(email)) {
       setError('Por favor, digite um email válido.');
       return;
     }
-
     if (password !== confirmPassword) {
       setError('As senhas não coincidem!');
       return;
     }
-
-    try {
-      await registerUser(email, password);
-      setSuccess('Cadastro realizado com sucesso! Redirecionando para o login...');
-      
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-
-    } catch (err) {
-      setError(err.message);
-    }
+    handleSubmit([email, password]);
   };
 
-  return (
-    <AuthLayout title="CRIAR CONTA">
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
-        
-        {error && <Alert severity="error" sx={{ my: 2, width: '100%' }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ my: 2, width: '100%' }}>{success}</Alert>}
+  const bottomLink = (
+    <Typography variant="body2" color="text.secondary">
+      Já tem uma conta?{' '}
+      <Link component={RouterLink} to="/login" sx={{ color: '#001f3f', fontWeight: 600, textDecoration: 'none', '&:hover': { color: '#003d7a', textDecoration: 'underline' } }}>
+        Faça o login
+      </Link>
+    </Typography>
+  );
 
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="email"
+  return (
+    <AuthPageLayout
+      title="Crie sua conta"
+      subtitle="Preencha os dados abaixo para começar"
+    >
+      <AuthFormWrapper
+        onSubmit={handleLocalSubmit}
+        buttonText="CRIAR CONTA"
+        isLoading={isLoading}
+        error={error}
+        success={success}
+        bottomLink={bottomLink}
+      >
+        {/* --- CÓDIGO REDUZIDO --- */}
+        <StyledAuthTextField
           label="Endereço de E-mail"
+          id="email"
           name="email"
-          variant="filled"
+          autoComplete="email"
+          autoFocus
+          placeholder="seu@email.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          name="password"
+        <StyledAuthTextField
           label="Senha"
-          type="password"
-          variant="filled"
+          name="password"
+          type={showPassword ? 'text' : 'password'}
+          id="password"
+          autoComplete="new-password"
+          placeholder="••••••••"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={() => setShowPassword(!showPassword)}
+                  edge="end"
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          name="confirmPassword"
+        <StyledAuthTextField
           label="Confirmar Senha"
-          type="password"
-          variant="filled"
+          name="confirmPassword"
+          type={showConfirmPassword ? 'text' : 'password'}
+          id="confirmPassword"
+          autoComplete="new-password"
+          placeholder="••••••••"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
-        />
-        
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          disableElevation
-          sx={{
-            mt: 3,
-            mb: 2,
-            py: 1.5,
-            textTransform: 'none',
-            fontSize: '1rem',
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle confirm password visibility"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  edge="end"
+                >
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
           }}
-        >
-          CADASTRAR
-        </Button>
-        
-        <Grid container justifyContent="flex-end">
-          <Grid item>
-            <Link component={RouterLink} to="/login" variant="body2" sx={{ color: 'text.secondary' }}>
-              Já tem uma conta? Faça o login
-            </Link>
-          </Grid>
-        </Grid>
-      </Box>
-    </AuthLayout>
+        />
+      </AuthFormWrapper>
+    </AuthPageLayout>
   );
 }
 

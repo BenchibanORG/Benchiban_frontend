@@ -1,8 +1,12 @@
 import React, { useState } from 'react';
-import { Box, TextField, Button, Alert, Link, Typography } from '@mui/material';
 import { Link as RouterLink } from 'react-router-dom';
-import AuthLayout from '../components/AuthLayout';
+import { Link, Typography } from '@mui/material';
 import { forgotPassword } from '../services/api';
+import AuthPageLayout from '../components/AuthPageLayout';
+import AuthFormWrapper from '../components/AuthFormWrapper';
+// Importa os novos componentes
+import StyledAuthTextField from '../components/StyledAuthTextField';
+import { useAuthSubmit } from '../hooks/useAuthSubmit'; // Embora não o usemos, é bom ver a consistência
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -10,79 +14,62 @@ function ForgotPasswordPage() {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
+  // Esta página é um pouco diferente (não redireciona),
+  // então mantemos a lógica de handleSubmit nela, mas ainda usamos os componentes
+  // reutilizáveis para o formulário.
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setSuccess('');
-
     const emailRegex = /^(?=.{1,254}$)(?=.{1,64}@)[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
     if (!email || !emailRegex.test(email)) {
       setError('Por favor, digite um endereço de e-mail válido.');
       return;
     }
-    
-    // --- LÓGICA DA API DO BACKEND ---
     try {
-      setIsLoading(true); // Inicia o carregamento
-
+      setIsLoading(true);
       const response = await forgotPassword(email);
-      
-      // Usamos a mensagem de sucesso que a API nos retorna.
       setSuccess(response.message);
-      setEmail(''); // Limpa o campo de e-mail após a submissão
-
+      setEmail('');
     } catch (err) {
-      // Em caso de erro de rede ou do servidor, exibimos uma mensagem genérica.
       setError('Ocorreu um erro. Por favor, tente novamente mais tarde.');
-      console.error("Falha na solicitação de redefinição de senha:", err); // Log para depuração
     } finally {
-      setIsLoading(false); // Finaliza o carregamento, independentemente do resultado
+      setIsLoading(false);
     }
   };
 
-  return (
-    <AuthLayout title="ESQUECEU A SENHA?">
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
-        
-        {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ my: 2 }}>{success}</Alert>}
+  const bottomLink = (
+    <Link component={RouterLink} to="/login" sx={{ color: '#001f3f', fontWeight: 600, textDecoration: 'none', '&:hover': { color: '#003d7a', textDecoration: 'underline' } }}>
+      Voltar para o Login
+    </Link>
+  );
 
-        <Typography variant="body2" align="center" sx={{ mb: 2 }}>
-          Digite seu e-mail abaixo e enviaremos um link para você redefinir sua senha.
-        </Typography>
-        
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="email"
+  return (
+    <AuthPageLayout
+      title="Esqueceu a senha?"
+      subtitle="Digite seu e-mail abaixo e enviaremos um link para você redefinir sua senha"
+    >
+      <AuthFormWrapper
+        onSubmit={handleSubmit}
+        buttonText="Enviar Link de Redefinição"
+        isLoading={isLoading}
+        error={error}
+        success={success}
+        bottomLink={bottomLink}
+      >
+        {/* --- CÓDIGO REDUZIDO --- */}
+        <StyledAuthTextField
           label="Endereço de E-mail"
+          id="email"
           name="email"
           autoComplete="email"
           autoFocus
-          variant="filled"
+          placeholder="seu@email.com"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-        
-        {/* --- FEEDBACK VISUAL NO BOTÃO --- */}
-        <Button
-          type="submit"
-          fullWidth
-          variant="contained"
-          sx={{ mt: 3, mb: 2, py: 1.5 }}
-          disabled={isLoading}
-        >
-          {isLoading ? 'Enviando...' : 'Enviar Link de Redefinição'}
-        </Button>
-
-        <Box sx={{ textAlign: 'center' }}>
-            <Link component={RouterLink} to="/login" variant="body2">
-              Voltar para o Login
-            </Link>
-        </Box>
-      </Box>
-    </AuthLayout>
+      </AuthFormWrapper>
+    </AuthPageLayout>
   );
 }
 

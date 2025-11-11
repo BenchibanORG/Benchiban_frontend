@@ -1,106 +1,119 @@
+// src/pages/RegisterPage.test.js
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import RegisterPage from './RegisterPage';
 import * as api from '../services/api';
 
-// Simula todo o módulo de api
+// Mock do módulo de API
 jest.mock('../services/api');
 
+// Mock do useNavigate (se necessário em futuros asserts)
+const mockNavigate = jest.fn();
+jest.mock('react-router-dom', () => {
+  const original = jest.requireActual('react-router-dom');
+  return {
+    ...original,
+    useNavigate: () => mockNavigate,
+  };
+});
+
 describe('RegisterPage', () => {
-  
-  // Helper para renderizar o componente dentro do Router
-  const renderComponent = () => {
-    return render(
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  const renderComponent = () =>
+    render(
       <BrowserRouter>
         <RegisterPage />
       </BrowserRouter>
     );
-  };
-
-  // Limpa os mocks após cada teste para garantir isolamento
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
 
   it('deve cadastrar um usuário com sucesso ao submeter o formulário', async () => {
-    // Arrange: Preparamos o mock para simular uma resposta de sucesso
+    // arrange
     api.registerUser.mockResolvedValue({ id: 1, email: 'teste@teste.com' });
-    
+
+    const user = userEvent.setup();
     renderComponent();
-    
-    // Act: Simulamos o usuário digitando nos campos
-    fireEvent.change(screen.getByLabelText(/endereço de e-mail/i), { target: { value: 'teste@teste.com' } });
-    fireEvent.change(screen.getByLabelText(/^Senha \*$/i), { target: { value: 'senha123' } });
-    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: 'senha123' } });
-    
-    // Simulamos o clique no botão
-    fireEvent.click(screen.getByRole('button', { name: /cadastrar/i }));
-    
-    // Assert: Verificamos se a mensagem de sucesso aparece
+
+    // obtém os inputs: email por placeholder e os dois campos de senha pelo placeholder compartilhado
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
+    const passwordPlaceholders = screen.getAllByPlaceholderText('••••••••');
+    const passwordInput = passwordPlaceholders[0];
+    const confirmPasswordInput = passwordPlaceholders[1];
+
+    // act
+    await user.type(emailInput, 'teste@teste.com');
+    await user.type(passwordInput, 'senha123');
+    await user.type(confirmPasswordInput, 'senha123');
+
+    await user.click(screen.getByRole('button', { name: /criar conta/i }));
+
+    // assert: a API foi chamada com os argumentos corretos
     await waitFor(() => {
-      expect(screen.getByText(/cadastro realizado com sucesso/i)).toBeInTheDocument();
+      expect(api.registerUser).toHaveBeenCalledTimes(1);
+      expect(api.registerUser).toHaveBeenCalledWith('teste@teste.com', 'senha123');
     });
-    
-    // Verifica se a função de API foi chamada corretamente
-    expect(api.registerUser).toHaveBeenCalledWith('teste@teste.com', 'senha123');
+
+    // verifica mensagem de sucesso exibida
+    expect(await screen.findByText(/cadastro realizado com sucesso/i)).toBeInTheDocument();
   });
 
   it('deve mostrar erro quando as senhas não coincidem', async () => {
+    const user = userEvent.setup();
     renderComponent();
-    
-    // Preenche o formulário com senhas diferentes
-    fireEvent.change(screen.getByLabelText(/endereço de e-mail/i), { target: { value: 'teste@teste.com' } });
-    fireEvent.change(screen.getByLabelText(/^Senha \*$/i), { target: { value: 'senha123' } });
-    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: 'senhadiferente' } });
-    
-    fireEvent.click(screen.getByRole('button', { name: /cadastrar/i }));
-    
-    // Verifica se a mensagem de erro aparece
-    await waitFor(() => {
-      expect(screen.getByText(/as senhas não coincidem/i)).toBeInTheDocument();
-    });
-    
-    // Verifica que a função de API NÃO foi chamada
+
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
+    const [passwordInput, confirmPasswordInput] = screen.getAllByPlaceholderText('••••••••');
+
+    await user.type(emailInput, 'teste@teste.com');
+    await user.type(passwordInput, 'senha123');
+    await user.type(confirmPasswordInput, 'senhadiferente');
+
+    await user.click(screen.getByRole('button', { name: /criar conta/i }));
+
+    // a validação de front-end deveria exibir erro imediatamente
+    expect(await screen.findByText(/as senhas não coincidem/i)).toBeInTheDocument();
     expect(api.registerUser).not.toHaveBeenCalled();
   });
 
-  it('deve mostrar erro quando o email é inválido', async () => {
+  it('deve mostrar erro quando o e-mail é inválido', async () => {
+    const user = userEvent.setup();
     renderComponent();
-    
-    // Preenche o formulário com email inválido
-    fireEvent.change(screen.getByLabelText(/endereço de e-mail/i), { target: { value: 'email-invalido' } });
-    fireEvent.change(screen.getByLabelText(/^Senha \*$/i), { target: { value: 'senha123' } });
-    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: 'senha123' } });
-    
-    fireEvent.click(screen.getByRole('button', { name: /cadastrar/i }));
-    
-    // Verifica se a mensagem de erro aparece
-    await waitFor(() => {
-      expect(screen.getByText(/por favor, digite um email válido/i)).toBeInTheDocument();
-    });
-    
-    // Verifica que a função de API NÃO foi chamada
+
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
+    const [passwordInput, confirmPasswordInput] = screen.getAllByPlaceholderText('••••••••');
+
+    await user.type(emailInput, 'email-invalido');
+    await user.type(passwordInput, 'senha123');
+    await user.type(confirmPasswordInput, 'senha123');
+
+    await user.click(screen.getByRole('button', { name: /criar conta/i }));
+
+    // validação do e-mail inválido
+    expect(await screen.findByText(/por favor, digite um email válido/i)).toBeInTheDocument();
     expect(api.registerUser).not.toHaveBeenCalled();
   });
 
   it('deve mostrar erro da API quando o cadastro falha no backend', async () => {
-    // Arrange: Mock da API retornando erro
+    // arrange: mock rejeita
     api.registerUser.mockRejectedValue(new Error('Email já cadastrado'));
-    
-    renderComponent();
-    
-    // Preenche o formulário
-    fireEvent.change(screen.getByLabelText(/endereço de e-mail/i), { target: { value: 'existente@teste.com' } });
-    fireEvent.change(screen.getByLabelText(/^Senha \*$/i), { target: { value: 'senha123' } });
-    fireEvent.change(screen.getByLabelText(/confirmar senha/i), { target: { value: 'senha123' } });
-    
-    fireEvent.click(screen.getByRole('button', { name: /cadastrar/i }));
-    
-    // Verifica se a mensagem de erro da API aparece
-    await waitFor(() => {
-      expect(screen.getByText(/email já cadastrado/i)).toBeInTheDocument();
-    });
-  });
 
+    const user = userEvent.setup();
+    renderComponent();
+
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
+    const [passwordInput, confirmPasswordInput] = screen.getAllByPlaceholderText('••••••••');
+
+    await user.type(emailInput, 'existente@teste.com');
+    await user.type(passwordInput, 'senha123');
+    await user.type(confirmPasswordInput, 'senha123');
+
+    await user.click(screen.getByRole('button', { name: /criar conta/i }));
+
+    // espera mensagem de erro retornada pela API aparecer
+    expect(await screen.findByText(/email já cadastrado/i)).toBeInTheDocument();
+  });
 });

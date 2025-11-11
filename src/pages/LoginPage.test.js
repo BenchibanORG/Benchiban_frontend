@@ -1,9 +1,10 @@
 import React from 'react';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, useNavigate } from 'react-router-dom';
+import { BrowserRouter } from 'react-router-dom';
 import LoginPage from './LoginPage';
 import * as api from '../services/api';
+import { fireEvent } from '@testing-library/react';
 
 // --- MOCKS ---
 jest.mock('../services/api');
@@ -27,54 +28,48 @@ const localStorageMock = (() => {
   };
 })();
 
-// --- CONFIGURAÇÃO DE TIMERS ---
-// Informa ao Jest que usaremos timers falsos para controlar o 'setTimeout'
 jest.useFakeTimers();
 
 describe('Página de Login', () => {
-  
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.clear();
     Object.defineProperty(window, 'localStorage', {
       value: localStorageMock,
-      writable: true
+      writable: true,
     });
   });
 
-  it('deve renderizar todos os elementos corretamente', () => {
+  const renderPage = () => {
     render(
       <BrowserRouter>
         <LoginPage />
       </BrowserRouter>
     );
+  };
 
-    // --- CORREÇÃO 1: RESOLVENDO O ERRO DE MÚLTIPLOS ELEMENTOS ---
-    // Usamos 'getAllByRole' para encontrar todos os cabeçalhos "Benchiban"
-    // e verificamos se o primeiro (o mais externo) existe.
-    const headings = screen.getAllByRole('heading', { name: /Benchiban/i });
-    expect(headings[0]).toBeInTheDocument();
+  it('deve renderizar todos os elementos principais', () => {
+    renderPage();
 
-    // Verifica os outros elementos
-    expect(screen.getByLabelText(/Endereço de E-mail/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Senha/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /Login/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /Bem-vindo\!/i })).toBeInTheDocument();
+    expect(screen.getByText(/Entre para acessar sua conta/i)).toBeInTheDocument();
+
+    // Campos principais localizados por placeholder
+    expect(screen.getByPlaceholderText('seu@email.com')).toBeInTheDocument();
+    expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
+
+    expect(screen.getByRole('button', { name: /entrar/i })).toBeInTheDocument();
     expect(screen.getByText(/Esqueceu a senha\?/i)).toBeInTheDocument();
-    expect(screen.getByText(/Ainda não tem conta\? Crie uma!/i)).toBeInTheDocument();
-    expect(screen.queryByLabelText(/Lembre de mim/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/Ainda não tem conta\?/i)).toBeInTheDocument();
+    expect(screen.getByText(/Crie uma agora/i)).toBeInTheDocument();
   });
 
   it('deve permitir ao usuário digitar email e senha', async () => {
-    // --- CORREÇÃO 2: LIGANDO O userEvent AOS FAKE TIMERS ---
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
+    renderPage();
 
-    const emailInput = screen.getByLabelText(/Endereço de E-mail/i);
-    const passwordInput = screen.getByLabelText(/Senha/i);
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
+    const passwordInput = screen.getByPlaceholderText('••••••••');
 
     await user.type(emailInput, 'teste@exemplo.com');
     await user.type(passwordInput, 'senha123');
@@ -83,22 +78,43 @@ describe('Página de Login', () => {
     expect(passwordInput).toHaveValue('senha123');
   });
 
-  it('deve fazer login com sucesso, salvar o token e redirecionar para /dashboard', async () => {
-    // --- CORREÇÃO 2: LIGANDO O userEvent AOS FAKE TIMERS ---
+  it('deve alternar a visibilidade da senha ao clicar no ícone', () => {
+  renderPage();
+
+  const passwordInput = screen.getByPlaceholderText('••••••••');
+  const toggleButton = screen.getByLabelText(/toggle password visibility/i);
+
+  // Inicialmente deve estar no modo "password"
+  expect(passwordInput).toHaveAttribute('type', 'password');
+
+  fireEvent.click(toggleButton);
+  expect(passwordInput).toHaveAttribute('type', 'text');
+
+  fireEvent.click(toggleButton);
+  expect(passwordInput).toHaveAttribute('type', 'password');
+});
+
+  it('deve exibir erro se os campos estiverem vazios', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+    renderPage();
+
+    await user.click(screen.getByRole('button', { name: /entrar/i }));
+
+    expect(await screen.findByText(/por favor, preencha o e-mail e a senha/i)).toBeInTheDocument();
+    expect(api.loginUser).not.toHaveBeenCalled();
+  });
+
+  it('deve fazer login com sucesso, salvar token e redirecionar', async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const mockTokenData = { access_token: 'fake-jwt-token-123', token_type: 'bearer' };
-    api.loginUser.mockResolvedValue(mockTokenData); 
+    api.loginUser.mockResolvedValue(mockTokenData);
 
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
+    renderPage();
 
-    await user.type(screen.getByLabelText(/Endereço de E-mail/i), 'teste@exemplo.com');
-    await user.type(screen.getByLabelText(/Senha/i), 'senha123');
+    await user.type(screen.getByPlaceholderText('seu@email.com'), 'teste@exemplo.com');
+    await user.type(screen.getByPlaceholderText('••••••••'), 'senha123');
 
-    const loginButton = screen.getByRole('button', { name: /Login/i });
+    const loginButton = screen.getByRole('button', { name: /entrar/i });
     await user.click(loginButton);
 
     expect(loginButton).toBeDisabled();
@@ -109,52 +125,30 @@ describe('Página de Login', () => {
     });
 
     expect(localStorageMock.setItem).toHaveBeenCalledWith('token', 'fake-jwt-token-123');
-    expect(await screen.findByText('Login bem-sucedido! A redirecionar...')).toBeInTheDocument();
-    
-    // Avança os timers do Jest para executar o 'setTimeout'
-    jest.advanceTimersByTime(2000);
+    expect(await screen.findByText(/login bem-sucedido! a redirecionar/i)).toBeInTheDocument();
 
+    jest.advanceTimersByTime(2000);
     await waitFor(() => {
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
   });
 
   it('deve exibir mensagem de erro quando o login falhar', async () => {
-    // --- CORREÇÃO 2: LIGANDO O userEvent AOS FAKE TIMERS ---
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
     const errorMessage = 'Credenciais inválidas';
     api.loginUser.mockRejectedValue(new Error(errorMessage));
 
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
+    renderPage();
 
-    await user.type(screen.getByLabelText(/Endereço de E-mail/i), 'errado@exemplo.com');
-    await user.type(screen.getByLabelText(/Senha/i), 'senhaerrada');
-    
-    const loginButton = screen.getByRole('button', { name: /Login/i });
+    await user.type(screen.getByPlaceholderText('seu@email.com'), 'errado@exemplo.com');
+    await user.type(screen.getByPlaceholderText('••••••••'), 'senhaerrada');
+
+    const loginButton = screen.getByRole('button', { name: /entrar/i });
     await user.click(loginButton);
 
     expect(await screen.findByText(errorMessage)).toBeInTheDocument();
     expect(loginButton).not.toBeDisabled();
     expect(localStorageMock.setItem).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
-  });
-
-  it('deve exibir erro se os campos estiverem vazios', async () => {
-    // --- CORREÇÃO 2: LIGANDO O userEvent AOS FAKE TIMERS ---
-    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-    render(
-      <BrowserRouter>
-        <LoginPage />
-      </BrowserRouter>
-    );
-
-    await user.click(screen.getByRole('button', { name: /Login/i }));
-
-    expect(await screen.findByText('Por favor, preencha o e-mail e a senha.')).toBeInTheDocument();
-    expect(api.loginUser).not.toHaveBeenCalled();
   });
 });

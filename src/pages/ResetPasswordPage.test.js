@@ -1,17 +1,15 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import ResetPasswordPage from './ResetPasswordPage';
 import { resetPassword } from '../services/api';
+
 jest.mock('../services/api');
 
-describe('Página de Redefinir Senha', () => {
-
-  // Função auxiliar para renderizar o componente com uma rota e URL específicas
-  const renderWithRouter = (initialRoute) => {
+describe('Componente ResetPasswordPage', () => {
+  const renderComponent = (url = '/reset-password?token=abc123') => {
     render(
-      <MemoryRouter initialEntries={[initialRoute]}>
+      <MemoryRouter initialEntries={[url]}>
         <Routes>
           <Route path="/reset-password" element={<ResetPasswordPage />} />
         </Routes>
@@ -19,71 +17,134 @@ describe('Página de Redefinir Senha', () => {
     );
   };
 
-  it('deve renderizar todos os elementos do formulário corretamente', () => {
-    renderWithRouter('/reset-password?token=some-token');
-
-    expect(screen.getByText(/REDEFINIR SENHA/i)).toBeInTheDocument();
-    expect(screen.getByTestId('password-input')).toBeInTheDocument();
-    expect(screen.getByTestId('confirm-password-input')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /salvar nova senha/i })).toBeInTheDocument();
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  it('deve exibir uma mensagem de erro se as senhas não coincidirem', async () => {
-    const user = userEvent.setup();
-    renderWithRouter('/reset-password?token=some-token');
+  test('deve permitir mostrar e esconder as senhas', () => {
+    renderComponent();
 
-    await user.type(screen.getByTestId('password-input'), 'senha123');
-    await user.type(screen.getByTestId('confirm-password-input'), 'senha456');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botoesVisibilidade = screen.getAllByLabelText(/toggle password visibility/i);
 
-    expect(await screen.findByText('As senhas não coincidem!')).toBeInTheDocument();
+    expect(novaSenhaInput).toHaveAttribute('type', 'password');
+    expect(confirmarSenhaInput).toHaveAttribute('type', 'password');
+
+    fireEvent.click(botoesVisibilidade[0]);
+    fireEvent.click(botoesVisibilidade[1]);
+
+    expect(novaSenhaInput).toHaveAttribute('type', 'text');
+    expect(confirmarSenhaInput).toHaveAttribute('type', 'text');
+
+    fireEvent.click(botoesVisibilidade[0]);
+    fireEvent.click(botoesVisibilidade[1]);
+
+    expect(novaSenhaInput).toHaveAttribute('type', 'password');
+    expect(confirmarSenhaInput).toHaveAttribute('type', 'password');
   });
 
-  it('deve exibir uma mensagem de erro se o token estiver ausente na URL', async () => {
-    const user = userEvent.setup();
-    renderWithRouter('/reset-password');
+  test('deve chamar a API, exibir sucesso e redirecionar após 3s', async () => {
+    resetPassword.mockResolvedValueOnce({ message: 'Senha redefinida com sucesso!' });
+    jest.useFakeTimers();
 
-    await user.type(screen.getByTestId('password-input'), 'novaSenhaSegura');
-    await user.type(screen.getByTestId('confirm-password-input'), 'novaSenhaSegura');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
+    renderComponent();
 
-    expect(await screen.findByText(/Token de redefinição ausente ou inválido/i)).toBeInTheDocument();
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
+
+    fireEvent.change(novaSenhaInput, { target: { value: 'NovaSenha123!' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'NovaSenha123!' } });
+    fireEvent.click(botaoSalvar);
+
+    await waitFor(() =>
+      expect(resetPassword).toHaveBeenCalledWith('abc123', 'NovaSenha123!')
+    );
+
+    expect(await screen.findByText(/senha redefinida com sucesso/i)).toBeInTheDocument();
+
+    jest.advanceTimersByTime(3000);
   });
 
-  it('deve chamar a API e exibir mensagem de sucesso ao submeter senhas válidas', async () => {
-    const user = userEvent.setup();
-    resetPassword.mockResolvedValue({ message: 'Sua senha foi redefinida com sucesso!' });
-    
-    renderWithRouter('/reset-password?token=valid-token-123');
+  // 🧪 Novo: campos vazios
+  test('deve exibir erro ao enviar com campos vazios', async () => {
+    renderComponent();
 
-    await user.type(screen.getByTestId('password-input'), 'novaSenhaSegura');
-    await user.type(screen.getByTestId('confirm-password-input'), 'novaSenhaSegura');
-    
-    const submitButton = screen.getByRole('button', { name: /salvar nova senha/i });
-    await user.click(submitButton);
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
+    fireEvent.click(botaoSalvar);
 
-    // Verifica se a função da API foi chamada corretamente
-    await waitFor(() => {
-      expect(resetPassword).toHaveBeenCalledTimes(1);
-      expect(resetPassword).toHaveBeenCalledWith('valid-token-123', 'novaSenhaSegura');
+    expect(await screen.findByText(/por favor, preencha todos os campos/i)).toBeInTheDocument();
+    expect(resetPassword).not.toHaveBeenCalled();
+  });
+
+  // 🧪 Novo: senhas diferentes
+  test('deve exibir erro quando as senhas não coincidem', async () => {
+    renderComponent();
+
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
+
+    fireEvent.change(novaSenhaInput, { target: { value: 'Senha123' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'Senha456' } });
+    fireEvent.click(botaoSalvar);
+
+    expect(await screen.findByText(/as senhas não coincidem/i)).toBeInTheDocument();
+    expect(resetPassword).not.toHaveBeenCalled();
+  });
+
+  // 🧪 Novo: senha curta
+  test('deve exibir erro quando a senha tiver menos de 8 caracteres', async () => {
+    renderComponent();
+
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
+
+    fireEvent.change(novaSenhaInput, { target: { value: '12345' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: '12345' } });
+    fireEvent.click(botaoSalvar);
+
+    const alert = await screen.findByRole('alert');
+    expect(alert).toHaveTextContent(/mínimo 8 caracteres/i);
+  });
+
+  // 🧪 Novo: token ausente
+  test('deve exibir erro quando o token estiver ausente', async () => {
+    renderComponent('/reset-password'); // sem token
+
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
+
+    fireEvent.change(novaSenhaInput, { target: { value: 'SenhaValida123' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'SenhaValida123' } });
+    fireEvent.click(botaoSalvar);
+
+    expect(
+      await screen.findByText(/token de redefinição ausente ou inválido/i)
+    ).toBeInTheDocument();
+    expect(resetPassword).not.toHaveBeenCalled();
+  });
+
+  // 🧪 Novo: erro de API
+  test('deve exibir erro se a API retornar erro', async () => {
+    resetPassword.mockRejectedValueOnce({
+      response: { data: { detail: 'Token expirado' } },
     });
 
-    // Verifica se a mensagem de sucesso da API é exibida
-    expect(await screen.findByText(/Sua senha foi redefinida com sucesso!/i)).toBeInTheDocument();
-  });
+    renderComponent();
 
-  it('deve exibir uma mensagem de erro se a API falhar', async () => {
-    const user = userEvent.setup();
-    const errorMessage = 'Token inválido ou expirado';
-    resetPassword.mockRejectedValue({ response: { data: { detail: errorMessage } } });
+    const novaSenhaInput = screen.getByTestId('password-input');
+    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
+    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
 
-    renderWithRouter('/reset-password?token=invalid-token');
+    fireEvent.change(novaSenhaInput, { target: { value: 'SenhaValida123' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'SenhaValida123' } });
+    fireEvent.click(botaoSalvar);
 
-    await user.type(screen.getByTestId('password-input'), 'qualquercoisa');
-    await user.type(screen.getByTestId('confirm-password-input'), 'qualquercoisa');
-    await user.click(screen.getByRole('button', { name: /salvar nova senha/i }));
-    
-    // Verificamos se a mensagem de erro vinda da API é exibida
-    expect(await screen.findByText(errorMessage)).toBeInTheDocument();
+    const errorAlert = await screen.findByText(/token expirado/i);
+    expect(errorAlert).toBeInTheDocument();
   });
 });

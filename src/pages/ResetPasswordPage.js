@@ -1,99 +1,162 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Box, TextField, Button, Alert } from '@mui/material';
-import AuthLayout from '../components/AuthLayout';
+import { Box, TextField, Button, Alert, Link, Typography, IconButton, InputAdornment } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import AuthPageLayout from '../components/AuthPageLayout';
 import { resetPassword } from '../services/api';
 
-function ResetPasswordPage() {
+const ResetPasswordPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const token = searchParams.get('token');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [alert, setAlert] = useState({ type: '', message: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    setError('');
-    setSuccess('');
 
     if (!password || !confirmPassword) {
-      setError('Por favor, preencha todos os campos.');
+      setAlert({ type: 'error', message: 'Por favor, preencha todos os campos.' });
       return;
     }
+
     if (password !== confirmPassword) {
-      setError('As senhas não coincidem!');
+      setAlert({ type: 'error', message: 'As senhas não coincidem!' });
       return;
     }
+
+    if (password.length < 8) {
+      setAlert({ type: 'error', message: 'A senha deve ter no mínimo 8 caracteres.' });
+      return;
+    }
+
+    const token = new URLSearchParams(location.search).get('token');
     if (!token) {
-      setError('Token de redefinição ausente ou inválido. Por favor, solicite um novo link.');
+      setAlert({
+        type: 'error',
+        message: 'Token de redefinição ausente ou inválido. Por favor, solicite um novo link.'
+      });
       return;
     }
 
     try {
-      setIsLoading(true);
+      setIsSubmitting(true);
+      setAlert({ type: '', message: '' });
+
       const response = await resetPassword(token, password);
-      setSuccess(response.message + ' Redirecionando para o login...');
-      setTimeout(() => navigate('/login'), 3000);
-    } catch (err) {
-      if (err.response && err.response.data && err.response.data.detail) {
-        setError(err.response.data.detail);
-      } else {
-        setError('Ocorreu um erro ao redefinir a senha. Tente novamente.');
-      }
-      console.error("Falha ao redefinir senha:", err);
-    } finally {
-      setIsLoading(false);
+
+      setAlert({ type: 'success', message: response.message });
+      setTimeout(() => {
+        navigate('/login');
+      }, 3000);
+    } catch (error) {
+      const errorMsg =
+        error?.response?.data?.detail ||
+        'Erro ao redefinir a senha. Por favor, tente novamente.';
+      setAlert({ type: 'error', message: errorMsg });
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <AuthLayout title="REDEFINIR SENHA">
-      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
-        
-        {error && <Alert severity="error" sx={{ my: 2 }}>{error}</Alert>}
-        {success && <Alert severity="success" sx={{ my: 2 }}>{success}</Alert>}
-        
+    <AuthPageLayout title="Redefinir Senha">
+      <Box component="form" onSubmit={handleSubmit} noValidate sx={{ mt: 1 }}>
+        <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
+          A senha deve ter no mínimo 8 caracteres
+        </Typography>
+
+        {alert.message && (
+          <Alert severity={alert.type} role="alert" sx={{ mb: 2 }}>
+            {alert.message}
+          </Alert>
+        )}
+
         <TextField
-          margin="normal"
           required
           fullWidth
           name="password"
+          type={showPassword ? 'text' : 'password'}
+          id="password"
+          placeholder="••••••••"
           label="Nova Senha"
-          type="password"
-          variant="filled"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           inputProps={{ 'data-testid': 'password-input' }}
-        />
-        <TextField
           margin="normal"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  edge="end"
+                >
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+
+        <TextField
           required
           fullWidth
           name="confirmPassword"
+          type={showConfirmPassword ? 'text' : 'password'}
+          id="confirmPassword"
+          placeholder="••••••••"
           label="Confirmar Nova Senha"
-          type="password"
-          variant="filled"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           inputProps={{ 'data-testid': 'confirm-password-input' }}
+          margin="normal"
+          InputProps={{
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton
+                  aria-label="toggle password visibility"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  edge="end"
+                >
+                  {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
         />
-        
+
         <Button
           type="submit"
           fullWidth
           variant="contained"
-          sx={{ mt: 3, mb: 2, py: 1.5 }}
-          disabled={isLoading}
+          color="primary"
+          disabled={isSubmitting}
+          sx={{ mt: 3, mb: 2 }}
         >
-          {isLoading ? 'Salvando...' : 'Salvar Nova Senha'}
+          {isSubmitting ? 'Salvando...' : 'Salvar Nova Senha'}
         </Button>
+
+        <Button
+          fullWidth
+          variant="outlined"
+          color="secondary"
+          onClick={() => navigate('/login')}
+        >
+          Voltar para o login
+        </Button>
+
+        <Box mt={2} textAlign="center">
+          <Link component={RouterLink} to="/login" variant="body2">
+            Voltar ao login
+          </Link>
+        </Box>
       </Box>
-    </AuthLayout>
+    </AuthPageLayout>
   );
-}
+};
 
 export default ResetPasswordPage;
