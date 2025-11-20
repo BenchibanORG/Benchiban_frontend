@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
@@ -7,33 +7,73 @@ import ResultsPage from './pages/ResultsPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
-// -----------------------------------------
+import PublicRoute from './components/PublicRoute';
 
 function App() {
   return (
-    <Router>
-      <Routes>
-        {/* --- 2. ROTAS PÚBLICAS --- */}
-        {/* Estas rotas podem ser acedidas por qualquer pessoa */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-        <Route path="/reset-password" element={<ResetPasswordPage />} />
+    <Routes>
+      {/* Rota raiz - redireciona para login */}
+      <Route path="/" element={<Navigate to="/login" replace />} />
 
-        {/* --- 3. ROTAS PROTEGIDAS --- */}
-        {/* Estas rotas só podem ser acedidas por utilizadores logados */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/results" element={<ResultsPage />} />
-          
-          {/* Se a sua Dashboard for também a página inicial, adicione-a aqui */}
-          <Route path="/login" element={<LoginPage />} />
-        </Route>
-        
-        {/* (Opcional: Adicionar uma rota 404 Not Found) */}
-        
-      </Routes>
-    </Router>
+      {/* Rotas públicas */}
+      <Route 
+        path="/login" 
+        element={
+          <PublicRoute>
+            <LoginPage />
+          </PublicRoute>
+        } 
+      />
+
+      <Route 
+        path="/register" 
+        element={
+          <PublicRoute>
+            <RegisterPage />
+          </PublicRoute>
+        } 
+      />
+
+      <Route 
+        path="/forgot-password" 
+        element={
+          <PublicRoute>
+            <ForgotPasswordPage />
+          </PublicRoute>
+        } 
+      />
+
+      <Route 
+        path="/reset-password" 
+        element={
+          <PublicRoute>
+            <ResetPasswordPage />
+          </PublicRoute>
+        } 
+      />
+
+      {/* Rotas protegidas */}
+      <Route 
+        path="/dashboard" 
+        element={
+          <ProtectedRoute>
+            <DashboardPage />
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/results" 
+        element={
+          <ProtectedRoute>
+            <ResultsPage />
+          </ProtectedRoute>
+        } 
+      />
+
+      {/* Catch-all */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 }
 

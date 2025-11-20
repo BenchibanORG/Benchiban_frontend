@@ -1,5 +1,5 @@
 import React from 'react';
-import { Card, CardContent, Typography, Button, Box } from '@mui/material';
+import { Card, Typography, Button, Box } from '@mui/material';
 
 function ResultCard({ site, country, price, link, isBestPrice = false }) {
   return (

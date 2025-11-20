@@ -1,18 +1,27 @@
+// src/components/AuthFormWrapper.js
 import React from 'react';
-import { Box, Button, Alert, Typography, CircularProgress, Link } from '@mui/material';
+import { Box, Button, Alert, Typography, CircularProgress } from '@mui/material';
 
 function AuthFormWrapper({ 
   onSubmit, 
   buttonText, 
   isLoading, 
   error, 
-  success, 
+  success,
+  warning,
   children, 
   bottomLink,
   links
 }) {
   return (
     <Box component="form" onSubmit={onSubmit} noValidate>
+      {/* Alertas de Aviso (Warning) */}
+      {typeof warning === 'string' && warning.trim() !== '' ? (
+        <Alert severity="warning" sx={{ mb: 3, borderRadius: 2 }}>
+          {warning}
+        </Alert>
+      ) : null}
+
       {/* Alertas de Erro e Sucesso */}
       {error && (
         <Alert severity="error" sx={{ mb: 3, borderRadius: 2 }}>
@@ -27,9 +36,11 @@ function AuthFormWrapper({
 
       {children}
 
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-        {links}
-      </Box>
+      {links && (
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+          {links}
+        </Box>
+      )}
 
       {/* Botão Principal de Submissão */}
       <Button
@@ -92,9 +103,11 @@ function AuthFormWrapper({
       </Box>
 
       {/* Link Inferior Centralizado */}
-      <Box sx={{ textAlign: 'center' }}>
-        {bottomLink}
-      </Box>
+      {bottomLink && (
+        <Box sx={{ textAlign: 'center' }}>
+          {bottomLink}
+        </Box>
+      )}
     </Box>
   );
 }
