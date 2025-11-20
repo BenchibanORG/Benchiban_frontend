@@ -1,18 +1,22 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import {
+  render,
+  screen,
+  waitFor,
+  fireEvent
+} from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import LoginPage from './LoginPage';
 import * as api from '../services/api';
-import { fireEvent } from '@testing-library/react';
+import { act } from 'react-dom/test-utils';
 
 // --- MOCKS ---
 jest.mock('../services/api');
-const mockNavigate = jest.fn();
-jest.mock('react-router-dom', () => ({
-  ...jest.requireActual('react-router-dom'),
-  useNavigate: () => mockNavigate,
-}));
 
 // Mock do localStorage
 const localStorageMock = (() => {
@@ -28,16 +32,34 @@ const localStorageMock = (() => {
   };
 })();
 
+// Mock do navigate
+const mockNavigate = jest.fn();
+
+// Variável para simular rotas protegidas
+let mockLocationState = {};
+
+jest.mock('react-router-dom', () => ({
+  ...jest.requireActual('react-router-dom'),
+  useNavigate: () => mockNavigate,
+  useLocation: () => ({
+    state: mockLocationState,
+  }),
+}));
+
 jest.useFakeTimers();
 
 describe('Página de Login', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     localStorageMock.clear();
+
     Object.defineProperty(window, 'localStorage', {
       value: localStorageMock,
       writable: true,
     });
+
+    // reseta o estado da rota
+    mockLocationState = {};
   });
 
   const renderPage = () => {
@@ -48,13 +70,13 @@ describe('Página de Login', () => {
     );
   };
 
+  //  TESTES
   it('deve renderizar todos os elementos principais', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { name: /Bem-vindo\!/i })).toBeInTheDocument();
     expect(screen.getByText(/Entre para acessar sua conta/i)).toBeInTheDocument();
 
-    // Campos principais localizados por placeholder
     expect(screen.getByPlaceholderText('seu@email.com')).toBeInTheDocument();
     expect(screen.getByPlaceholderText('••••••••')).toBeInTheDocument();
 
@@ -79,20 +101,19 @@ describe('Página de Login', () => {
   });
 
   it('deve alternar a visibilidade da senha ao clicar no ícone', () => {
-  renderPage();
+    renderPage();
 
-  const passwordInput = screen.getByPlaceholderText('••••••••');
-  const toggleButton = screen.getByLabelText(/toggle password visibility/i);
+    const passwordInput = screen.getByPlaceholderText('••••••••');
+    const toggleButton = screen.getByLabelText(/toggle password visibility/i);
 
-  // Inicialmente deve estar no modo "password"
-  expect(passwordInput).toHaveAttribute('type', 'password');
+    expect(passwordInput).toHaveAttribute('type', 'password');
 
-  fireEvent.click(toggleButton);
-  expect(passwordInput).toHaveAttribute('type', 'text');
+    fireEvent.click(toggleButton);
+    expect(passwordInput).toHaveAttribute('type', 'text');
 
-  fireEvent.click(toggleButton);
-  expect(passwordInput).toHaveAttribute('type', 'password');
-});
+    fireEvent.click(toggleButton);
+    expect(passwordInput).toHaveAttribute('type', 'password');
+  });
 
   it('deve exibir erro se os campos estiverem vazios', async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
@@ -106,6 +127,7 @@ describe('Página de Login', () => {
 
   it('deve fazer login com sucesso, salvar token e redirecionar', async () => {
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
     const mockTokenData = { access_token: 'fake-jwt-token-123', token_type: 'bearer' };
     api.loginUser.mockResolvedValue(mockTokenData);
 
@@ -120,16 +142,17 @@ describe('Página de Login', () => {
     expect(loginButton).toBeDisabled();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
 
-    await waitFor(() => {
-      expect(api.loginUser).toHaveBeenCalledWith('teste@exemplo.com', 'senha123');
-    });
-
+    expect(api.loginUser).toHaveBeenCalledWith('teste@exemplo.com', 'senha123');
     expect(localStorageMock.setItem).toHaveBeenCalledWith('token', 'fake-jwt-token-123');
+
     expect(await screen.findByText(/login bem-sucedido! a redirecionar/i)).toBeInTheDocument();
 
-    jest.advanceTimersByTime(2000);
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
     await waitFor(() => {
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
     });
   });
 
@@ -150,5 +173,59 @@ describe('Página de Login', () => {
     expect(loginButton).not.toBeDisabled();
     expect(localStorageMock.setItem).not.toHaveBeenCalled();
     expect(mockNavigate).not.toHaveBeenCalled();
+  });
+
+  //  TESTES DE WARNING DA ROTA PROTEGIDA
+  it('deve exibir o aviso de rota protegida quando unauthorized for true', () => {
+    mockLocationState = { unauthorized: true };
+
+    renderPage();
+
+    expect(
+      screen.getByText('Você precisa estar logado para acessar esta página.')
+    ).toBeInTheDocument();
+  });
+
+  it('deve redirecionar para a página anterior após login bem-sucedido se houver location.state.from', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    mockLocationState = {
+      unauthorized: true,
+      from: { pathname: '/results' }
+    };
+
+    api.loginUser.mockResolvedValue({ access_token: 'abc123' });
+
+    renderPage();
+
+    await user.type(screen.getByPlaceholderText('seu@email.com'), 'aaa@bbb.com');
+    await user.type(screen.getByPlaceholderText('••••••••'), 'senha123');
+
+    await user.click(screen.getByRole('button', { name: /entrar/i }));
+
+    await act(async () => {
+      jest.advanceTimersByTime(2000);
+    });
+
+    await waitFor(() => {
+      expect(mockNavigate).toHaveBeenCalledWith('/results', { replace: true });
+    });
+  });
+
+  it('warning não deve atrapalhar o uso normal da tela', async () => {
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    mockLocationState = { unauthorized: true };
+
+    renderPage();
+
+    const emailInput = screen.getByPlaceholderText('seu@email.com');
+    const passwordInput = screen.getByPlaceholderText('••••••••');
+
+    await user.type(emailInput, 'x@y.com');
+    await user.type(passwordInput, 'senha123');
+
+    expect(emailInput).toHaveValue('x@y.com');
+    expect(passwordInput).toHaveValue('senha123');
   });
 });

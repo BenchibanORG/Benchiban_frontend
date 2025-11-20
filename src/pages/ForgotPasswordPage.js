@@ -4,9 +4,7 @@ import { Link, Typography } from '@mui/material';
 import { forgotPassword } from '../services/api';
 import AuthPageLayout from '../components/AuthPageLayout';
 import AuthFormWrapper from '../components/AuthFormWrapper';
-// Importa os novos componentes
 import StyledAuthTextField from '../components/StyledAuthTextField';
-import { useAuthSubmit } from '../hooks/useAuthSubmit'; // Embora não o usemos, é bom ver a consistência
 
 function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -14,9 +12,6 @@ function ForgotPasswordPage() {
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  // Esta página é um pouco diferente (não redireciona),
-  // então mantemos a lógica de handleSubmit nela, mas ainda usamos os componentes
-  // reutilizáveis para o formulário.
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
@@ -39,9 +34,24 @@ function ForgotPasswordPage() {
   };
 
   const bottomLink = (
-    <Link component={RouterLink} to="/login" sx={{ color: '#001f3f', fontWeight: 600, textDecoration: 'none', '&:hover': { color: '#003d7a', textDecoration: 'underline' } }}>
-      Voltar para o Login
-    </Link>
+    <Typography variant="body2" color="text.secondary">
+      <Link 
+        component={RouterLink} 
+        to="/login" 
+        variant="body2"
+        sx={{ 
+          color: '#001f3f', 
+          fontWeight: 600, 
+          textDecoration: 'none', 
+          '&:hover': { 
+            color: '#003d7a', 
+            textDecoration: 'underline' 
+          } 
+        }}
+      >
+        Voltar para o Login
+      </Link>
+    </Typography>
   );
 
   return (
@@ -57,7 +67,6 @@ function ForgotPasswordPage() {
         success={success}
         bottomLink={bottomLink}
       >
-        {/* --- CÓDIGO REDUZIDO --- */}
         <StyledAuthTextField
           label="Endereço de E-mail"
           id="email"

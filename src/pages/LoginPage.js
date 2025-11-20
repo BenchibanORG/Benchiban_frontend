@@ -1,12 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate, Link as RouterLink } from 'react-router-dom';
+// src/pages/LoginPage.js
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation, Link as RouterLink } from 'react-router-dom';
 import { 
   Box, 
   TextField, 
   Link, 
   Typography,
   IconButton,
-  InputAdornment
+  InputAdornment,
 } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { loginUser } from '../services/api';
@@ -19,24 +20,43 @@ function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [warning, setWarning] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Verifica se o usuário foi redirecionado de uma rota protegida
+  useEffect(() => {
+    if (location.state?.unauthorized) {
+      setWarning('Você precisa estar logado para acessar esta página.');
+      // Limpa o estado após 5 segundos
+      const timer = setTimeout(() => setWarning(''), 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [location]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setSuccess('');
+    setWarning('');
+    
     if (!email || !password) {
       setError('Por favor, preencha o e-mail e a senha.');
       return;
     }
+    
     setIsLoading(true);
+    
     try {
       const data = await loginUser(email, password);
       localStorage.setItem('token', data.access_token);
       setSuccess('Login bem-sucedido! A redirecionar...');
+      
       setTimeout(() => {
-        navigate('/dashboard');
+        // Redireciona para a página que o usuário tentou acessar ou para o dashboard
+        const redirectTo = location.state?.from?.pathname || '/dashboard';
+        navigate(redirectTo, { replace: true });
       }, 2000);
     } catch (err) {
       setError(err.message || 'E-mail ou senha inválidos. Tente novamente.');
@@ -44,7 +64,6 @@ function LoginPage() {
     }
   };
 
-  // Componente de link inferior
   const bottomLink = (
     <Typography variant="body2" color="text.secondary">
       Ainda não tem conta?{' '}
@@ -66,7 +85,6 @@ function LoginPage() {
     </Typography>
   );
 
-  // Componente de link "Esqueceu a senha?"
   const forgotPasswordLink = (
     <Link
       component={RouterLink}
@@ -97,6 +115,7 @@ function LoginPage() {
         isLoading={isLoading}
         error={error}
         success={success}
+        warning={warning}
         links={forgotPasswordLink}
         bottomLink={bottomLink}
       >

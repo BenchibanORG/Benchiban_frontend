@@ -48,6 +48,7 @@ const gpuData = [
 ];
 
 function DashboardPage() {
+  console.log('Dashboard carregando...');
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');

@@ -1,39 +1,21 @@
 import React from 'react';
-// --- 1. REMOVE O 'useLocation' DA IMPORTAÇÃO ---
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 
-/**
- * Esta função verifica se o utilizador está autenticado
- * ao procurar o token no localStorage.
- */
-const useAuth = () => {
-  const token = localStorage.getItem('token');
-  return !!token; 
-};
+function ProtectedRoute({ children }) {
+  const token = localStorage.getItem('authToken') || localStorage.getItem('token');
+  const location = useLocation();
 
-/**
- * Este componente verifica se o utilizador está autenticado.
- */
-const ProtectedRoute = () => {
-  const isAuth = useAuth();
-  
-  // --- 2. REMOVE A LINHA 'const location = useLocation()' ---
-  // A variável 'location' não era necessária aqui.
-
-  if (!isAuth) {
-    // Se não estiver autenticado, redireciona para /login
-    // Passamos a mensagem no 'state' para a LoginPage a poder ler
+  if (!token) {
     return (
-      <Navigate 
-        to="/login" 
-        state={{ message: "Você precisa estar logado para aceder a esta página." }} 
-        replace 
+      <Navigate
+        to="/login"
+        state={{ from: location, unauthorized: true }}
+        replace
       />
     );
   }
 
-  // Se estiver autenticado, renderiza o componente filho (ex: DashboardPage)
-  return <Outlet />;
-};
+  return children;
+}
 
 export default ProtectedRoute;

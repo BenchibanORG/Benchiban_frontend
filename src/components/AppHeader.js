@@ -1,6 +1,6 @@
 // src/components/AppHeader.js
 import React from 'react';
-import { AppBar, Toolbar, Box, Typography, Button } from '@mui/material';
+import { AppBar, Toolbar, Box, Button } from '@mui/material';
 import { Logout } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import benchibanLogo from '../assets/images/benchibanlogo.png';
@@ -9,6 +9,7 @@ function AppHeader() {
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    localStorage.removeItem('token');
     localStorage.removeItem('authToken');
     navigate('/login');
   };
@@ -37,18 +38,10 @@ function AppHeader() {
             }}
             onClick={() => navigate('/dashboard')}
             onError={(e) => {
+              console.error('Erro ao carregar logo:', e);
               e.target.style.display = 'none';
             }}
           />
-          <Typography
-            variant="h5"
-            sx={{
-              fontWeight: 'bold',
-              color: '#001f3f',
-              letterSpacing: '0.05em',
-            }}
-          >
-          </Typography>
         </Box>
         
         <Button
