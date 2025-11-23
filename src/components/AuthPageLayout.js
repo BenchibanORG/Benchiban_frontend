@@ -12,9 +12,12 @@ function AuthPageLayout({
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        height: '100vh',
+        width: '100%',
+        overflow: 'hidden',
         display: 'flex',
         background: 'linear-gradient(135deg, #f8fafc 0%, #e0f2fe 50%, #f1f5f9 100%)',
+        m: 0, p: 0
       }}
     >
       {/* Painel Esquerdo - Branding (Desktop) */}
@@ -22,10 +25,14 @@ function AuthPageLayout({
         sx={{
           display: { xs: 'none', lg: 'flex' },
           width: '50%',
+          height: '100%',
           background: 'linear-gradient(135deg, #001f3f 0%, #003d7a 100%)',
-          p: 6,
+          p: 4,
           flexDirection: 'column',
-          justifyContent: 'space-between',
+          // MUDANÇA AQUI: Alterado de 'space-between' para 'center'
+          // Isso agrupa os elementos no meio da tela, evitando que o rodapé seja cortado
+          justifyContent: 'center', 
+          gap: 10, // Adiciona um espaço generoso entre o texto principal e as características
           position: 'relative',
           overflow: 'hidden',
         }}
@@ -56,7 +63,7 @@ function AuthPageLayout({
           }}
         />
 
-        {/* Conteúdo do painel */}
+        {/* Conteúdo do painel (Logo + Texto) */}
         <Box sx={{ position: 'relative', zIndex: 1 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 4 }}>
             <Box
@@ -64,7 +71,7 @@ function AuthPageLayout({
               src={benchibanLogo}
               alt="Benchiban Logo"
               sx={{
-                height: 100,
+                height: 80,
                 width: 'auto',
                 objectFit: 'contain',
                 display: 'block',
@@ -73,7 +80,7 @@ function AuthPageLayout({
             />
           </Box>
 
-          <Box sx={{ mt: 8 }}>
+          <Box>
             <Typography variant="h4" sx={{ color: 'white', fontWeight: 'bold', mb: 2, lineHeight: 1.3 }}>
               Encontre as melhores<br />ofertas de GPUs
             </Typography>
@@ -84,7 +91,8 @@ function AuthPageLayout({
           </Box>
         </Box>
 
-        <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 3 }}>
+        {/* Características (Economia, Conversão) */}
+        <Box sx={{ position: 'relative', zIndex: 1, display: 'flex', flexDirection: 'column', gap: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
             <Box
               sx={{
@@ -137,10 +145,11 @@ function AuthPageLayout({
           alignItems: 'center',
           justifyContent: 'center',
           p: 4,
+          height: '100%',
+          overflowY: 'auto',
         }}
       >
         <Container maxWidth="sm">
-          {/* Logo Mobile */}
           <Box
             sx={{
               display: { xs: 'flex', lg: 'none' },
