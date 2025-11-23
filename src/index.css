@@ -1,6 +1,18 @@
-@font-face {
-  font-family: 'Akira Expanded';
-  src: url('./assets/fonts/Akira Expanded Demo.otf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
+/* Reset básico para garantir altura total sem scroll indesejado */
+body, html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  overflow-x: hidden; /* Previne scroll horizontal globalmente */
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
 }

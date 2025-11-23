@@ -1,4 +1,3 @@
-// src/pages/ResultsPage.js
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { Box, Container, Typography, Alert, Button } from '@mui/material';
@@ -14,29 +13,20 @@ function ResultsPage() {
   const comparisonData = location.state?.data;
   const query = location.state?.query || 'Busca';
 
-  console.log("ResultsPage - Dados completos recebidos:", comparisonData);
+  console.log("ResultsPage - Dados recebidos:", comparisonData);
 
   if (!comparisonData) {
-    console.error("ResultsPage - comparisonData está nulo ou indefinido!");
     return (
       <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
         <AppHeader />
         <Container maxWidth="md" sx={{ py: 8, textAlign: 'center' }}>
           <Alert severity="error" sx={{ mb: 3 }}>
-            Erro: Não foi possível carregar os dados da comparação. Por favor, volte e tente novamente.
+            Erro: Dados da comparação não encontrados. Por favor, refaça a busca.
           </Alert>
           <Button
             onClick={() => navigate('/dashboard')}
             variant="outlined"
             startIcon={<ArrowBackIcon />}
-            sx={{
-              borderColor: '#001f3f',
-              color: '#001f3f',
-              '&:hover': {
-                borderColor: '#003d7a',
-                backgroundColor: 'rgba(0, 31, 63, 0.05)',
-              },
-            }}
           >
             Voltar ao Dashboard
           </Button>
@@ -48,25 +38,12 @@ function ResultsPage() {
 
   const bestDeal = comparisonData.overall_best_deal;
 
-  const normalizeDeal = (deal) => {
-    if (!deal) return null;
-    return {
-      site: deal.source || deal.site || 'Site desconhecido',
-      country: deal.country || 'País não informado',
-      price: deal.price_brl || deal.price || null,
-      link: deal.url || deal.link || '#',
-    };
-  };
-
-  const normalizedBestDeal = normalizeDeal(bestDeal);
-
-  console.log("ResultsPage - Objeto overall_best_deal normalizado:", normalizedBestDeal);
-
   return (
     <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
       <AppHeader />
       
       <Container maxWidth="lg" sx={{ py: 6 }}>
+        {/* Botão Voltar */}
         <Button
           onClick={() => navigate('/dashboard')}
           variant="outlined"
@@ -85,53 +62,53 @@ function ResultsPage() {
           Nova Busca
         </Button>
 
-        <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 4 }}>
-          Resultados para: {query}
+        <Typography variant="h4" component="h1" gutterBottom align="center" sx={{ mb: 4, fontWeight: 'bold' }}>
+          Resultados para: "{query}"
         </Typography>
 
-        {normalizedBestDeal ? (
+        {/* --- SEÇÃO DE MELHOR OFERTA --- */}
+        {bestDeal ? (
           <Box sx={{ textAlign: 'center', mb: 6 }}>
+            {/* Exibe a fonte no título conforme solicitado */}
             <Typography
               variant="h5"
               component="h2"
               sx={{ mb: 2, fontWeight: 'bold', color: 'primary.main' }}
             >
-              Melhor Preço Encontrado
+              Melhor Preço Encontrado no {bestDeal.source}
             </Typography>
 
             <Box sx={{ display: 'flex', justifyContent: 'center' }}>
               <ResultCard
-                site={normalizedBestDeal.site}
-                country={normalizedBestDeal.country}
-                price={normalizedBestDeal.price}
-                link={normalizedBestDeal.link}
+                // Passando os dados corretos do backend para o componente
+                title={bestDeal.title}
+                price={bestDeal.price_brl}
+                link={bestDeal.link}
+                seller={bestDeal.seller}
+                
+                // isBestPrice ativa o estilo de destaque (borda azul, maior)
                 isBestPrice={true}
-                sx={{
-                  textAlign: 'left',
-                  width: '100%',
-                  maxWidth: 900,
-                }}
+                
               />
             </Box>
           </Box>
         ) : (
-          <>
-            {console.warn("ResultsPage - overall_best_deal é 'falsy', renderizando Alert.")}
-            <Alert severity="warning" sx={{ mb: 4 }}>
-              Não foi possível determinar a melhor oferta geral (verifique a conversão de moeda ou se há ofertas disponíveis).
-            </Alert>
-          </>
+          <Alert severity="warning" sx={{ mb: 4 }}>
+            Não foi possível determinar a melhor oferta geral no momento.
+          </Alert>
         )}
 
+        {/* --- LISTA DE RESULTADOS POR FONTE --- */}
         {Object.entries(comparisonData.results_by_source).map(([sourceName, items]) =>
           items && items.length > 0 ? (
             <SourceResults key={sourceName} sourceName={sourceName} items={items} />
           ) : null
         )}
 
+        {/* Mensagem de "Nenhum resultado" se todas as listas estiverem vazias */}
         {Object.values(comparisonData.results_by_source).every(list => list.length === 0) && (
           <Typography align="center" color="text.secondary" sx={{ mt: 4 }}>
-            Nenhuma oferta encontrada para esta placa de vídeo nas fontes pesquisadas.
+            Nenhuma oferta encontrada nas lojas pesquisadas.
           </Typography>
         )}
       </Container>

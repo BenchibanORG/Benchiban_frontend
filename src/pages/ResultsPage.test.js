@@ -6,21 +6,24 @@ import userEvent from '@testing-library/user-event';
 import ResultsPage from './ResultsPage';
 
 // --- MOCKS ---
+const mockNavigate = jest.fn();
+
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useLocation: jest.fn(),
-  useNavigate: jest.fn(() => jest.fn()), // mock para o navigate()
+  useNavigate: () => mockNavigate,
 }));
 
+// MOCK ATUALIZADO: Reflete as props reais que o ResultsPage passa agora (title, seller)
 jest.mock('../components/ResultsCard', () => (props) => (
   <div data-testid="mock-result-card">
-    Mock ResultCard - Site: {props.site}, Price: {props.price}, isBest: {props.isBestPrice.toString()}
+    Mock ResultCard - Title: {props.title}, Seller: {props.seller}, Price: {props.price}, isBest: {props.isBestPrice ? 'true' : 'false'}
   </div>
 ));
 
 jest.mock('../components/SourceResults', () => (props) => (
   <div data-testid={`mock-source-results-${props.sourceName}`}>
-    Mock SourceResults - Source: {props.sourceName}, Items: {props.items.length}
+    Mock SourceResults - Source: {props.sourceName}, Items: {props.items ? props.items.length : 0}
   </div>
 ));
 
@@ -41,98 +44,77 @@ afterAll(() => {
 const mockApiData = {
   results_by_source: {
     ebay: [
-      { title: 'Item eBay 1', price_brl: 500.0, source: 'eBay', seller_username: 'seller1', seller_rating: 99, link: 'link1' },
-      { title: 'Item eBay 2', price_brl: 600.0, source: 'eBay', seller_username: 'seller2', seller_rating: 98, link: 'link2' },
+      { title: 'NVIDIA RTX 5090 - eBay', price_brl: 14000, seller: 'BestSeller', link: 'http://ebay.com' }
     ],
-    mercado_livre: [],
+    amazon: [
+      { title: 'NVIDIA RTX 5090 - Amazon', price_brl: 15000, seller: 'Amazon US', link: 'http://amazon.com' }
+    ]
   },
   overall_best_deal: {
-    title: 'Item eBay 1',
-    price_brl: 500.0,
+    title: 'NVIDIA RTX 5090 - eBay',
+    price_brl: 14000,
+    seller: 'BestSeller', // Agora temos vendedor no best deal
     source: 'eBay',
-    seller_username: 'seller1',
-    seller_rating: 99,
-    link: 'link1',
-  },
-};
-
-const mockApiDataNoBestDeal = {
-  results_by_source: {
-    ebay: [{ title: 'Item eBay 1', source: 'eBay' }],
-  },
-  overall_best_deal: null,
+    link: 'http://ebay.com'
+  }
 };
 
 const mockApiDataNoResults = {
-  results_by_source: {
-    ebay: [],
-    mercado_livre: [],
-  },
-  overall_best_deal: null,
+  results_by_source: { ebay: [], amazon: [] },
+  overall_best_deal: null
 };
 
 // --- HELPER ---
 const renderComponentWithData = (stateData) => {
   useLocation.mockReturnValue({ state: stateData });
-  render(
+  return render(
     <MemoryRouter>
       <ResultsPage />
     </MemoryRouter>
   );
 };
 
-// --- TESTES ---
 describe('Componente ResultsPage', () => {
   beforeEach(() => {
-    useLocation.mockClear();
+    jest.clearAllMocks();
   });
 
-  it('renderiza corretamente com dados completos', () => {
-    const query = 'NVIDIA RTX 5090 32GB';
-    renderComponentWithData({ data: mockApiData, query });
+  it('renderiza corretamente com dados válidos', () => {
+    renderComponentWithData({ data: mockApiData, query: 'Teste GPU' });
 
-    // Título principal (query)
-    expect(screen.getByRole('heading', { name: new RegExp(query, 'i') })).toBeInTheDocument();
+    // Verifica título da página
+    expect(screen.getByText(/Resultados para: "Teste GPU"/i)).toBeInTheDocument();
 
-    // Melhor oferta (ResultCard)
+    // Verifica título da seção de destaque (AGORA INCLUI A FONTE)
+    expect(screen.getByText(/Melhor Preço Encontrado no eBay/i)).toBeInTheDocument();
+
+    // Verifica se o ResultCard de destaque foi renderizado com os dados corretos
     const bestCard = screen.getByTestId('mock-result-card');
-    expect(bestCard).toHaveTextContent('Site: eBay');
-    expect(bestCard).toHaveTextContent('Price: 500');
+    expect(bestCard).toHaveTextContent('Title: NVIDIA RTX 5090 - eBay');
+    expect(bestCard).toHaveTextContent('Seller: BestSeller');
+    expect(bestCard).toHaveTextContent('Price: 14000');
     expect(bestCard).toHaveTextContent('isBest: true');
 
-    // Resultados por fonte
-    expect(screen.getByTestId('mock-source-results-ebay')).toHaveTextContent('Items: 2');
-    expect(screen.queryByText(/Nenhuma oferta encontrada/i)).not.toBeInTheDocument();
+    // Verifica se as listas de resultados (SourceResults) foram renderizadas
+    expect(screen.getByTestId('mock-source-results-ebay')).toHaveTextContent('Items: 1');
+    expect(screen.getByTestId('mock-source-results-amazon')).toHaveTextContent('Items: 1');
   });
 
-  it('exibe aviso se não houver "overall_best_deal"', () => {
-    renderComponentWithData({ data: mockApiDataNoBestDeal, query: 'Teste' });
-
-    // Alert de aviso
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent(/Não foi possível determinar a melhor oferta geral/i);
-
-    // SourceResults renderizado
-    expect(screen.getByTestId('mock-source-results-ebay')).toBeInTheDocument();
-
-    // Sem card de melhor oferta
-    expect(screen.queryByTestId('mock-result-card')).not.toBeInTheDocument();
-  });
-
-  it('exibe mensagem se nenhuma fonte retornar resultados', () => {
+  it('renderiza mensagem quando não há resultados', () => {
     renderComponentWithData({ data: mockApiDataNoResults, query: 'Nada' });
 
-    // Sem melhor oferta
+    // Sem melhor oferta (renderiza alerta de aviso)
+    expect(screen.getByText(/Não foi possível determinar a melhor oferta geral/i)).toBeInTheDocument();
     expect(screen.queryByTestId('mock-result-card')).not.toBeInTheDocument();
 
-    // Nenhum SourceResults renderizado
+    // Nenhum SourceResults renderizado com itens
     expect(screen.queryByTestId(/mock-source-results-/i)).not.toBeInTheDocument();
 
-    // Mensagem de ausência de ofertas
-    expect(screen.getByText(/Nenhuma oferta encontrada/i)).toBeInTheDocument();
+    // Mensagem de ausência de ofertas no final da página
+    expect(screen.getByText(/Nenhuma oferta encontrada nas lojas pesquisadas/i)).toBeInTheDocument();
   });
 
-  it('exibe erro se os dados não forem passados corretamente pela navegação', () => {
+  it('exibe erro se os dados não forem passados corretamente pela navegação (state null)', () => {
     useLocation.mockReturnValue({ state: null });
     render(
       <MemoryRouter>
@@ -140,9 +122,9 @@ describe('Componente ResultsPage', () => {
       </MemoryRouter>
     );
 
-    // Ajustado para texto exato do Alert no componente
+    // Texto exato do Alert de erro
     const errorAlert = screen.getByRole('alert');
-    expect(errorAlert).toHaveTextContent(/Erro: Não foi possível carregar os dados da comparação/i);
+    expect(errorAlert).toHaveTextContent(/Erro: Dados da comparação não encontrados/i);
 
     // Botão de retorno presente
     const voltarBtn = screen.getByRole('button', { name: /Voltar ao Dashboard/i });
@@ -150,15 +132,13 @@ describe('Componente ResultsPage', () => {
   });
 
   it('botão "Nova Busca" está presente e acionável', async () => {
-    const mockNavigate = jest.fn();
-    jest.spyOn(require('react-router-dom'), 'useNavigate').mockReturnValue(mockNavigate);
-
+    const user = userEvent.setup();
     renderComponentWithData({ data: mockApiData, query: 'Teste' });
 
     const novaBuscaBtn = screen.getByRole('button', { name: /Nova Busca/i });
     expect(novaBuscaBtn).toBeInTheDocument();
 
-    await userEvent.click(novaBuscaBtn);
+    await user.click(novaBuscaBtn);
     expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
   });
 });

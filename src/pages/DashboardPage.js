@@ -118,10 +118,24 @@ function DashboardPage() {
         </Box>
 
         {/* Grid de Cards */}
-        <Grid container spacing={4} justifyContent="center">
+        <Grid container spacing={4} justifyContent="center" alignItems="stretch"> {/* alignItems="stretch" garante altura igual na linha */}
           {gpuData.map((gpu, index) => (
-            <Grid item key={index} xs={12} sm={6} lg={4}>
-              <Box sx={{ position: 'relative' }}>
+            <Grid 
+              item 
+              key={index} 
+              xs={12} 
+              sm={6} 
+              lg={4} 
+              sx={{ display: 'flex' }}
+            >
+              <Box 
+                sx={{ 
+                  position: 'relative',
+                  width: '100%',          
+                  display: 'flex',        
+                  flexDirection: 'column'
+                }}
+              >
                 {/* Tag de Destaque */}
                 <Chip
                   label={gpu.tag}
@@ -147,6 +161,8 @@ function DashboardPage() {
                   isLoading={loadingGpu === gpu.name}
                   sx={{
                     height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
                     cursor: isLoading ? 'wait' : 'pointer',
                     opacity: isLoading && loadingGpu !== gpu.name ? 0.5 : 1,
                     transition: 'all 0.3s ease',

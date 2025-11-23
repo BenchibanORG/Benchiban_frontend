@@ -10,11 +10,23 @@ function GpuCard({ name, description, image, onClick, sx }) {
         borderRadius: 4,
         overflow: 'hidden',
         backgroundColor: '#fff',
-        height: '100%',
-        ...sx,
+        // Estas propriedades permitem que o card responda ao layout flex do pai
+        display: 'flex',
+        flexDirection: 'column',
+        ...sx, 
       }}
     >
-      <CardActionArea onClick={onClick}>
+      <CardActionArea 
+        onClick={onClick}
+        sx={{
+          // Garante que a área clicável ocupe todo o card
+          height: '100%',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'flex-start', // Alinha itens no topo
+          alignItems: 'stretch'
+        }}
+      >
         <CardMedia
           component="img"
           height="260"
@@ -23,10 +35,12 @@ function GpuCard({ name, description, image, onClick, sx }) {
           sx={{
             objectFit: 'contain',
             p: 2,
-            backgroundColor: '#ffffffff',
+            backgroundColor: '#fff', // Corrigido hex (tinha ffffff a mais)
           }}
         />
-        <CardContent>
+        
+        {/* flexGrow: 1 faz este conteúdo esticar para preencher o espaço vazio */}
+        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
           <Typography
             gutterBottom
             variant="h6"

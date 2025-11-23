@@ -32,7 +32,9 @@ function HeroSection({
         <Typography variant="h5" sx={{ opacity: 0.9, mb: 1 }}>
           {subtitle}
         </Typography>
-        <Typography variant="body1" sx={{ opacity: 0.8, maxWidth: 700, mx: 'auto' }}>
+        
+        {/* Aumentei o maxWidth de 700 para 900 para evitar a quebra de linha */}
+        <Typography variant="body1" sx={{ opacity: 0.8, maxWidth: 900, mx: 'auto' }}>
           {description}
         </Typography>
       </Container>

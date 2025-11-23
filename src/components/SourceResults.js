@@ -16,35 +16,47 @@ function SourceResults({ sourceName, items }) {
   return (
     <Box sx={{ mt: 4, width: '100%' }}>
       <Typography variant="h6" gutterBottom sx={{ textTransform: 'capitalize' }}>
-        Melhores Ofertas - {sourceName.replace('_', ' ')} {/* Ex: exibe "Mercado Livre" */}
+        Melhores Ofertas - {sourceName.replace('_', ' ')}
       </Typography>
       <Divider sx={{ mb: 2 }} />
       <Grid container spacing={2}>
         {items.map((item, index) => (
-          <Grid item xs={12} sm={6} md={4} key={`${sourceName}-${index}`}> {/* Layout responsivo */}
+          <Grid item xs={12} sm={6} md={4} key={`${sourceName}-${index}`}>
             <Card sx={{ height: '100%', display: 'flex', flexDirection: 'column', boxShadow: 1 }}>
               <CardContent sx={{ flexGrow: 1 }}>
-                <Typography variant="body2" color="text.secondary" noWrap title={item.title}> {/* Evita que títulos longos quebrem o layout */}
+                {/* Título */}
+                <Typography variant="body2" color="text.secondary" noWrap title={item.title}>
                   {item.title}
                 </Typography>
+                
+                {/* Preço */}
                 <Typography variant="h6" component="p" sx={{ my: 1, fontWeight: 'medium' }}>
-                  {formatCurrency(item.price_brl)} {/* Prioriza BRL */}
-                  {item.price_brl === null && item.price_usd && (
-                     ` (${formatCurrency(item.price_usd, item.currency)})` // Mostra USD se BRL não estiver disponível
-                  )}
+                  {formatCurrency(item.price_brl)}
                 </Typography>
-                <Typography variant="caption" display="block">
-                  Vendedor: {item.seller_username} ({item.seller_rating}%)
+                
+                {/* Vendedor */}
+                <Typography variant="caption" display="block" color="text.primary">
+                  Vendedor: {item.seller || 'N/A'}
                 </Typography>
+
+                {/* Avaliação (Em linha separada) */}
+                {item.rating && (
+                  <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                    Avaliação: {item.rating}% positivo
+                  </Typography>
+                )}
               </CardContent>
+              
+              {/* Botão "VER OFERTA" */}
               <Box sx={{ p: 1, display: 'flex', justifyContent: 'center' }}>
                 <Button 
                   size="small" 
                   href={item.link} 
                   target="_blank" 
                   rel="noopener noreferrer"
+                  sx={{ fontWeight: 'bold' }}
                 >
-                  Ver Oferta
+                  VER OFERTA
                 </Button>
               </Box>
             </Card>

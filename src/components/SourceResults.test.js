@@ -1,92 +1,76 @@
 import React from 'react';
 import { render, screen, within } from '@testing-library/react';
-import SourceResults from './SourceResults'; // Importa o componente
+import SourceResults from './SourceResults';
 
-// Mock de dados para os itens
+// Mock de dados atualizado com as novas propriedades (seller, rating)
 const mockItems = [
   {
-    title: 'Item 1 - Bom Preço BRL',
-    price_usd: 100.0,
+    title: 'Item 1 - Completo',
     price_brl: 525.50,
-    currency: 'USD',
-    seller_rating: 99.0,
-    seller_username: 'vendedor1',
+    seller: 'vendedor1',
+    rating: 99.0,
     link: 'http://link1.com',
     source: 'ebay'
   },
   {
-    title: 'Item 2 - Sem Preço BRL',
-    price_usd: 120.50,
-    price_brl: null,
-    currency: 'USD',
-    seller_rating: 95.0,
-    seller_username: 'vendedor2',
+    title: 'Item 2 - Sem Avaliação',
+    price_brl: 1200.00,
+    seller: 'vendedor2',
+    rating: null, // Simula item sem avaliação
     link: 'http://link2.com',
-    source: 'ebay'
+    source: 'amazon'
   },
   {
-    title: 'Item 3 - Moeda Diferente (Exemplo)',
-    price_usd: 90.00,
-    price_brl: null,
-    currency: 'EUR',
-    seller_rating: 97.0,
-    seller_username: 'vendedor3',
+    title: 'Item 3 - Sem Vendedor',
+    price_brl: 300.00,
+    seller: null, // Simula item sem vendedor
+    rating: 95.5,
     link: 'http://link3.com',
-    source: 'ebay'
+    source: 'aliexpress'
   }
 ];
 
 describe('Componente SourceResults', () => {
 
-  it('deve renderizar o título e os itens corretamente', () => {
-    const sourceName = 'ebay';
-    render(<SourceResults sourceName={sourceName} items={mockItems} />);
-
-    expect(screen.getByRole('heading', { name: /Melhores Ofertas - Ebay/i })).toBeInTheDocument();
-    expect(screen.getByText(mockItems[0].title)).toBeInTheDocument();
-    expect(screen.getByText(mockItems[1].title)).toBeInTheDocument();
-    expect(screen.getByText(mockItems[2].title)).toBeInTheDocument();
-
-    const firstItemCard = screen.getByText(mockItems[0].title).closest('.MuiCard-root');
-    expect(within(firstItemCard).getByText(/R\$\s*525,50/i)).toBeInTheDocument();
-    expect(within(firstItemCard).getByText(/Vendedor: vendedor1 \(99%?\)/i)).toBeInTheDocument();
-    expect(within(firstItemCard).getByRole('link', { name: /Ver Oferta/i })).toHaveAttribute('href', mockItems[0].link);
+  it('deve renderizar o título da seção corretamente', () => {
+    render(<SourceResults sourceName="ebay" items={mockItems} />);
+    expect(screen.getByText(/Melhores Ofertas - ebay/i)).toBeInTheDocument();
   });
 
-  it('deve exibir o preço em USD como fallback quando price_brl for nulo', () => {
-    const sourceName = 'ebay';
-    render(<SourceResults sourceName={sourceName} items={mockItems} />);
+  it('deve renderizar os dados do item completo corretamente (Título, Preço, Vendedor, Avaliação)', () => {
+    render(<SourceResults sourceName="ebay" items={[mockItems[0]]} />);
 
-    const secondItemCard = screen.getByText(mockItems[1].title).closest('.MuiCard-root');
+    // Título
+    expect(screen.getByText('Item 1 - Completo')).toBeInTheDocument();
     
-    // --- CORREÇÃO AQUI ---
-    // Encontra o elemento <p> que contém o preço
-    // O seletor ':not([title])' ajuda a evitar pegar o <p> do título se ele também contiver 'N/A'
-    const priceElement = within(secondItemCard).getByText((content, element) => {
-      return element.tagName.toLowerCase() === 'p' && content.includes('N/A') && !element.hasAttribute('title');
-    });
-    // Verifica se este elemento <p> contém AMBAS as partes do texto
-    expect(priceElement).toHaveTextContent(/N\/A/i);
-    // Ajusta a regex para o formato exato renderizado: US$ 120,50
-    expect(priceElement).toHaveTextContent(/\(US\$\s*120,50\)/i); 
-  });
-   
-  it('deve exibir o preço original se a moeda não for USD e price_brl for nulo', () => {
-    const sourceName = 'ebay';
-    render(<SourceResults sourceName={sourceName} items={mockItems} />);
-
-    const thirdItemCard = screen.getByText(mockItems[2].title).closest('.MuiCard-root');
-
-    // Encontra o elemento <p> que contém o preço
-    const priceElement = within(thirdItemCard).getByText((content, element) => {
-       return element.tagName.toLowerCase() === 'p' && content.includes('N/A') && !element.hasAttribute('title');
-    });
-    // Verifica se este elemento <p> contém AMBAS as partes do texto
-    expect(priceElement).toHaveTextContent(/N\/A/i);
-     // Ajusta a regex para o formato exato renderizado: € 90,00
-    expect(priceElement).toHaveTextContent(/\(€\s*90,00\)/i); 
+    // Preço (R$ 525,50) - Regex flexível para espaços
+    expect(screen.getByText((content) => content.includes('R$') && content.includes('525,50'))).toBeInTheDocument();
+    
+    // Vendedor
+    expect(screen.getByText(/Vendedor: vendedor1/i)).toBeInTheDocument();
+    
+    // Avaliação (em linha separada com texto "positivo")
+    expect(screen.getByText(/Avaliação: 99% positivo/i)).toBeInTheDocument();
+    
+    // Link/Botão
+    const linkButton = screen.getByRole('link', { name: /VER OFERTA/i });
+    expect(linkButton).toHaveAttribute('href', 'http://link1.com');
   });
 
+  it('NÃO deve renderizar a linha de avaliação se o rating for nulo', () => {
+    render(<SourceResults sourceName="amazon" items={[mockItems[1]]} />);
+
+    expect(screen.getByText('Item 2 - Sem Avaliação')).toBeInTheDocument();
+    
+    // Garante que o texto "Avaliação:" não aparece para este item
+    expect(screen.queryByText(/Avaliação:/i)).not.toBeInTheDocument();
+  });
+
+  it('deve renderizar "N/A" se o vendedor for nulo', () => {
+    render(<SourceResults sourceName="aliexpress" items={[mockItems[2]]} />);
+
+    expect(screen.getByText(/Vendedor: N\/A/i)).toBeInTheDocument();
+  });
 
   it('não deve renderizar nada se a lista de itens estiver vazia', () => {
     const { container } = render(<SourceResults sourceName="ebay" items={[]} />);
