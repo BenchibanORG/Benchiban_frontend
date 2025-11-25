@@ -1,7 +1,9 @@
 import axios from 'axios';
 
-// A URL base da sua API que está rodando no Docker.
-const API_URL = 'http://localhost:8000';
+/**Conexão com o Backend */
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+console.log('Ambiente:', process.env.NODE_ENV);
+console.log('Conectando ao Backend em:', API_URL);
 
 /**
  * Registra um novo usuário.
