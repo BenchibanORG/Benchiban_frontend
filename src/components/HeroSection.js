@@ -5,7 +5,7 @@ import { TrendingUp } from '@mui/icons-material';
 
 function HeroSection({ 
   title = "Encontre as Melhores Ofertas",
-  subtitle = "Compare preços em tempo real de placas de vídeo de alto desempenho",
+  subtitle = "Compare preços em tempo real de placas de vídeo de alto desempenho para treinamento de Inteligência Artificial",
   description = "Pesquisamos em eBay, Amazon e outros marketplaces globais para trazer o melhor preço em Real (BRL)"
 }) {
   return (

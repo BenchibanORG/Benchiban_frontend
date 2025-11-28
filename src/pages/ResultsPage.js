@@ -41,7 +41,7 @@ function ResultsPage() {
     }
   }, [comparisonData]);
 
-  // --- Função: Atualizar Cotação ---
+  /*// --- Função: Atualizar Cotação ---
   const fetchRate = async (forceRefresh = false) => {
     setRateLoading(true);
     try {
@@ -61,7 +61,7 @@ function ResultsPage() {
     } finally {
       setRateLoading(false);
     }
-  };
+  };*/
 
   // Helper para formatar horário
   const formatTime = (date) => {
