@@ -1,16 +1,13 @@
 import axios from 'axios';
 
 /**Conexão com o Backend */
-const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+//const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+const API_URL = 'http://localhost:8000';
 console.log('Ambiente:', process.env.NODE_ENV);
 console.log('Conectando ao Backend em:', API_URL);
 
 /**
  * Registra um novo usuário.
- * @param {string} email - O email do usuário.
- * @param {string} password - A senha do usuário.
- * @returns {Promise<object>} Os dados do usuário criado.
- * @throws {Error} Lança um erro se o cadastro falhar, com a mensagem vinda do backend.
  */
 export const registerUser = async (email, password) => {
   try {
@@ -26,11 +23,7 @@ export const registerUser = async (email, password) => {
 };
 
 /**
- * Autentica um usuário e retorna um token de acesso.
- * @param {string} email - O email do usuário.
- * @param {string} password - A senha do usuário.
- * @returns {Promise<object>} Objeto com o access_token.
- * @throws {Error} Lança um erro se a autenticação falhar.
+ * Autentica um usuário.
  */
 export const loginUser = async (email, password) => {
   try {
@@ -46,25 +39,19 @@ export const loginUser = async (email, password) => {
 };
 
 /**
- * Envia uma solicitação para iniciar o processo de redefinição de senha.
- * @param {string} email - O email do usuário.
- * @returns {Promise<object>} A resposta da API.
+ * Solicitação de reset de senha.
  */
 export const forgotPassword = async (email) => {
   try {
     const response = await axios.post(`${API_URL}/api/auth/forgot-password`, { email });
     return response.data;
   } catch (error) {
-    // Relança o erro para o componente tratar
     throw error;
   }
 };
 
 /**
- * Envia o token e a nova senha para efetivar a redefinição.
- * @param {string} token - O token recebido por email.
- * @param {string} newPassword - A nova senha digitada pelo usuário.
- * @returns {Promise<object>} A resposta da API.
+ * Efetiva a redefinição de senha.
  */
 export const resetPassword = async (token, newPassword) => {
   try {
@@ -74,27 +61,49 @@ export const resetPassword = async (token, newPassword) => {
     });
     return response.data;
   } catch (error) {
-    // Relança o erro para o componente tratar
     throw error;
   }
 };
 
 /**
- * Busca por um produto em todas as fontes configuradas no backend.
- * Retorna os resultados agrupados por fonte e a melhor oferta geral.
- * @param {string} query - O termo de busca para o produto.
- * @returns {Promise<object>} Objeto com 'results_by_source' e 'overall_best_deal'.
+ * Busca comparação de produtos.
  */
 export const getProductComparison = async (query) => {
   try {
-    // Faz a chamada GET para o novo endpoint, passando a query como parâmetro
     const response = await axios.get(`${API_URL}/api/products/comparison`, {
-      params: { q: query } // Passa a query string corretamente
+      params: { q: query }
     });
-    return response.data; // Retorna a estrutura { results_by_source: {...}, overall_best_deal: {...} }
+    return response.data;
   } catch (error) {
-    // Relança o erro para o componente tratar
     throw error;
   }
 };
 
+// --- Função para buscar a cotação do Dólar ---
+/**
+ * Obtém a cotação atual do Dólar (USD) para Real (BRL).
+ * @param {boolean} refresh - Se true, força a atualização via API externa no backend.
+ * @returns {Promise<object>} 
+ */
+export const getExchangeRate = async (refresh = false) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/exchange-rate`, {
+      params: { refresh }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Erro na API de cotação:", error);
+    throw error;
+  }
+};
+
+const api = {
+  registerUser,
+  loginUser,
+  forgotPassword,
+  resetPassword,
+  getProductComparison,
+  getExchangeRate,
+};
+
+export default api;
