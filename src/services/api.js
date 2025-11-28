@@ -1,8 +1,8 @@
 import axios from 'axios';
 
 /**Conexão com o Backend */
-//const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
-const API_URL = 'http://localhost:8000';
+const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:8000';
+//const API_URL = 'http://localhost:8000';
 console.log('Ambiente:', process.env.NODE_ENV);
 console.log('Conectando ao Backend em:', API_URL);
 

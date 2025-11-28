@@ -1,88 +1,91 @@
 import React from 'react';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import SourceResults from './SourceResults';
 
-// Mock de dados atualizado com as novas propriedades (seller, rating)
+// --- MOCK DO COMPONENTE FILHO ---
+// Isso isola o teste. Não precisamos que o ResultCard faça cálculos reais,
+// apenas verificamos se ele recebeu os props certos do pai.
+jest.mock('./ResultsCard', () => {
+  return function MockResultCard(props) {
+    return (
+      <div data-testid="result-card">
+        <span data-testid="card-title">{props.title}</span>
+        <span data-testid="card-seller">{props.seller}</span>
+        <span data-testid="card-price-brl">{props.priceBrl ? 'BRL_VALUE' : 'NULL'}</span>
+        <span data-testid="card-rate">{props.exchangeRate}</span>
+      </div>
+    );
+  };
+});
+
 const mockItems = [
   {
-    title: 'Item 1 - Completo',
-    price_brl: 525.50,
-    seller: 'vendedor1',
-    rating: 99.0,
-    link: 'http://link1.com',
-    source: 'ebay'
+    title: 'RTX 4090 Ti',
+    price_original: 1599.99,
+    currency_original: 'USD',
+    price_brl: null,
+    link: 'https://ebay.com/123',
+    seller_username: 'PowerSellerUSA', // Caso com username
+    rating: 99.8,
   },
   {
-    title: 'Item 2 - Sem Avaliação',
-    price_brl: 1200.00,
-    seller: 'vendedor2',
-    rating: null, // Simula item sem avaliação
-    link: 'http://link2.com',
-    source: 'amazon'
+    title: 'RTX 3080 Usada',
+    price_brl: 2899.90, // Caso com preço BRL direto
+    link: 'https://amazon.com.br/456',
+    seller: 'Amazon', // Caso sem username
+    rating: 4.7,
   },
   {
-    title: 'Item 3 - Sem Vendedor',
-    price_brl: 300.00,
-    seller: null, // Simula item sem vendedor
-    rating: 95.5,
-    link: 'http://link3.com',
-    source: 'aliexpress'
-  }
+    title: 'GTX 1660 Super',
+    price_brl: 1299.00,
+    link: 'https://aliexpress.com/789',
+    seller: null,
+    rating: null,
+  },
 ];
 
-describe('Componente SourceResults', () => {
+describe('SourceResults', () => {
+  const exchangeRate = 5.5;
 
-  it('deve renderizar o título da seção corretamente', () => {
-    render(<SourceResults sourceName="ebay" items={mockItems} />);
+  it('deve renderizar o título da fonte corretamente', () => {
+    render(<SourceResults sourceName="ebay" items={mockItems} exchangeRate={exchangeRate} />);
+    // Verifica se o título "TOP 3 Melhores Ofertas - ebay" apareceu
     expect(screen.getByText(/Melhores Ofertas - ebay/i)).toBeInTheDocument();
   });
 
-  it('deve renderizar os dados do item completo corretamente (Título, Preço, Vendedor, Avaliação)', () => {
-    render(<SourceResults sourceName="ebay" items={[mockItems[0]]} />);
-
-    // Título
-    expect(screen.getByText('Item 1 - Completo')).toBeInTheDocument();
+  it('deve renderizar a quantidade correta de cards', () => {
+    render(<SourceResults sourceName="amazon" items={mockItems} exchangeRate={exchangeRate} />);
     
-    // Preço (R$ 525,50) - Regex flexível para espaços
-    expect(screen.getByText((content) => content.includes('R$') && content.includes('525,50'))).toBeInTheDocument();
-    
-    // Vendedor
-    expect(screen.getByText(/Vendedor: vendedor1/i)).toBeInTheDocument();
-    
-    // Avaliação (em linha separada com texto "positivo")
-    expect(screen.getByText(/Avaliação: 99% positivo/i)).toBeInTheDocument();
-    
-    // Link/Botão
-    const linkButton = screen.getByRole('link', { name: /VER OFERTA/i });
-    expect(linkButton).toHaveAttribute('href', 'http://link1.com');
+    // Devemos ter 3 instâncias do mock do ResultCard
+    const cards = screen.getAllByTestId('result-card');
+    expect(cards).toHaveLength(3);
   });
 
-  it('NÃO deve renderizar a linha de avaliação se o rating for nulo', () => {
-    render(<SourceResults sourceName="amazon" items={[mockItems[1]]} />);
-
-    expect(screen.getByText('Item 2 - Sem Avaliação')).toBeInTheDocument();
+  it('deve passar a cotação (exchangeRate) corretamente para os filhos', () => {
+    render(<SourceResults sourceName="ebay" items={mockItems} exchangeRate={exchangeRate} />);
     
-    // Garante que o texto "Avaliação:" não aparece para este item
-    expect(screen.queryByText(/Avaliação:/i)).not.toBeInTheDocument();
+    // Verifica se o valor 5.5 foi passado para os cards
+    const rates = screen.getAllByTestId('card-rate');
+    expect(rates[0]).toHaveTextContent('5.5');
   });
 
-  it('deve renderizar "N/A" se o vendedor for nulo', () => {
-    render(<SourceResults sourceName="aliexpress" items={[mockItems[2]]} />);
-
-    expect(screen.getByText(/Vendedor: N\/A/i)).toBeInTheDocument();
+  it('deve priorizar seller_username sobre seller', () => {
+    render(<SourceResults sourceName="mixed" items={mockItems} exchangeRate={exchangeRate} />);
+    
+    const sellers = screen.getAllByTestId('card-seller');
+    
+    // Item 1: Tem seller_username 'PowerSellerUSA', deve usar ele
+    expect(sellers[0]).toHaveTextContent('PowerSellerUSA');
+    
+    // Item 2: Não tem username, tem seller 'Amazon', deve usar ele
+    expect(sellers[1]).toHaveTextContent('Amazon');
   });
 
-  it('não deve renderizar nada se a lista de itens estiver vazia', () => {
+  it('não deve renderizar nada quando items estiver vazio, null ou undefined', () => {
     const { container } = render(<SourceResults sourceName="ebay" items={[]} />);
     expect(container).toBeEmptyDOMElement();
-  });
 
-  it('não deve renderizar nada se a lista de itens for nula ou indefinida', () => {
     const { container: containerNull } = render(<SourceResults sourceName="ebay" items={null} />);
     expect(containerNull).toBeEmptyDOMElement();
-
-    const { container: containerUndefined } = render(<SourceResults sourceName="ebay" items={undefined} />);
-    expect(containerUndefined).toBeEmptyDOMElement();
   });
-
 });

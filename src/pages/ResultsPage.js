@@ -41,19 +41,22 @@ function ResultsPage() {
     }
   }, [comparisonData]);
 
-  /*// --- Função: Atualizar Cotação ---
+  // --- Função: Atualizar Cotação ---
   const fetchRate = async (forceRefresh = false) => {
     setRateLoading(true);
     try {
-      const data = await api.getExchangeRate(forceRefresh);
-      if (data && data.rate) {
-        setExchangeRate(data.rate);
-        
-        // Se a API retornar timestamp, usamos ele. Senão, usamos agora.
-        if (data.timestamp) {
-            setRateTimestamp(new Date(data.timestamp));
-        } else {
-            setRateTimestamp(new Date());
+      // Verifica se a função existe no mock/api antes de chamar para evitar crash
+      if (api.getExchangeRate) {
+        const data = await api.getExchangeRate(forceRefresh);
+        if (data && data.rate) {
+          setExchangeRate(data.rate);
+          
+          // Se a API retornar timestamp, usamos ele. Senão, usamos agora.
+          if (data.timestamp) {
+              setRateTimestamp(new Date(data.timestamp));
+          } else {
+              setRateTimestamp(new Date());
+          }
         }
       }
     } catch (error) {
@@ -61,7 +64,7 @@ function ResultsPage() {
     } finally {
       setRateLoading(false);
     }
-  };*/
+  };
 
   // Helper para formatar horário
   const formatTime = (date) => {
