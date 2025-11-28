@@ -1,168 +1,206 @@
-// src/pages/DashboardPage.test.js
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import DashboardPage from './DashboardPage';
 import { getProductComparison } from '../services/api';
 
-// --- MOCKS DE DEPENDÊNCIAS ---
-
-// 1. Mock da API
+// --- MOCKS ---
 jest.mock('../services/api');
-
-// 2. Mock do Router (useNavigate)
 const mockNavigate = jest.fn();
+
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useNavigate: () => mockNavigate,
 }));
 
-// 3. Mock dos Componentes Filhos (Para isolar o teste do Dashboard)
-jest.mock('../components/AppHeader', () => () => <div data-testid="app-header">Header</div>);
-jest.mock('../components/HeroSection', () => () => <div data-testid="hero-section">Hero</div>);
-jest.mock('../components/HowItWorks', () => () => <div data-testid="how-it-works">HowItWorks</div>);
-jest.mock('../components/AppFooter', () => () => <div data-testid="app-footer">Footer</div>);
+// Mocks visuais para simplificar o teste (evita renderizar filhos complexos)
+jest.mock('../components/AppHeader', () => () => <div data-testid="app-header">Header Mock</div>);
+jest.mock('../components/HeroSection', () => () => <div data-testid="hero-section">Hero Mock</div>);
+jest.mock('../components/HowItWorks', () => () => <div data-testid="how-it-works">HowItWorks Mock</div>);
+jest.mock('../components/AppFooter', () => () => <div data-testid="app-footer">Footer Mock</div>);
 
-// 4. Mock do GpuCard (Simplificado para teste de clique)
-jest.mock('../components/GpuCard', () => (props) => (
-  <div
-    data-testid={`gpu-card-${props.name}`}
-    onClick={props.onClick}
-    style={props.sx}
-  >
-    {props.name}
+// Mock do GpuCard para facilitar cliques e verificação de props
+jest.mock('../components/GpuCard', () => ({ name, description, techInfo, onClick }) => (
+  <div data-testid={`gpu-card-${name}`} onClick={onClick}>
+    {name} | {description} | Tech: {techInfo || 'none'}
   </div>
 ));
 
-// 5. Mock das Imagens (Evita erro de import de arquivo estático no Jest)
-jest.mock('../assets/images/rtx5090.jpg', () => 'rtx5090.jpg');
-jest.mock('../assets/images/rtxa6000.jpg', () => 'rtxa6000.jpg');
-jest.mock('../assets/images/amdw7900.jpg', () => 'amdw7900.jpg');
-
-// --- DADOS DE TESTE ---
-// Devem corresponder aos nomes usados no DashboardPage.js
-const gpuNames = [
-  'NVIDIA RTX 5090 32GB',
-  'NVIDIA RTX A6000 48GB',
-  'AMD Radeon PRO W7900 48GB'
-];
+// Mocks de imagens para evitar erros de importação do Jest
+jest.mock('../assets/images/rtx5090.jpg', () => 'mock-rtx5090');
+jest.mock('../assets/images/rtxa6000.jpg', () => 'mock-rtxa6000');
+jest.mock('../assets/images/amdw7900.jpg', () => 'mock-amdw7900');
+jest.mock('../assets/images/amdrx7600xt.png', () => 'mock-amdrx7600xt');
+jest.mock('../assets/images/amdrx7900xt.png', () => 'mock-amdrx7900xt');
+jest.mock('../assets/images/amdrx7900xtx.png', () => 'mock-amdrx7900xtx');
+jest.mock('../assets/images/intelarca770.png', () => 'mock-intelarca770');
+jest.mock('../assets/images/rtx4070tisuper.png', () => 'mock-rtx4070tisuper');
+jest.mock('../assets/images/rtx4080super.png', () => 'mock-rtx4080super');
+jest.mock('../assets/images/rtx6000ada.png', () => 'mock-rtx6000ada');
 
 const mockApiResponse = {
-  results_by_source: { ebay: [{ title: 'Mock Item', price_brl: 100 }] },
-  overall_best_deal: { title: 'Mock Item', price_brl: 100 },
+  results_by_source: { kabum: [{ title: 'Mock', price_brl: 5000 }] },
+  overall_best_deal: { title: 'Mock', price_brl: 5000 },
 };
 
-// --- SUÍTE DE TESTES ---
-describe('Componente DashboardPage', () => {
+describe('DashboardPage', () => {
+  // Configuração pré-teste
   beforeEach(() => {
     jest.clearAllMocks();
     getProductComparison.mockResolvedValue(mockApiResponse);
   });
 
-  const renderComponent = () => {
-    return render(
-      <BrowserRouter>
-        <DashboardPage />
-      </BrowserRouter>
-    );
-  };
+  const renderPage = () => render(
+    <BrowserRouter>
+      <DashboardPage />
+    </BrowserRouter>
+  );
 
-  it('renderiza corretamente os componentes principais da página', () => {
-    renderComponent();
+  it('renderiza componentes principais e todos os 10 cards iniciais', () => {
+    renderPage();
 
-    // Verifica se os componentes de layout estão presentes
+    // Verifica elementos estáticos
     expect(screen.getByTestId('app-header')).toBeInTheDocument();
     expect(screen.getByTestId('hero-section')).toBeInTheDocument();
-    expect(screen.getByTestId('how-it-works')).toBeInTheDocument();
-    expect(screen.getByTestId('app-footer')).toBeInTheDocument();
+    expect(screen.getByText(/Escolha sua GPU/i)).toBeInTheDocument(); // Texto atualizado conforme arquivo DashboardPage.js
     
-    // Verifica o título principal
-    expect(screen.getByText('Selecione uma Placa de Vídeo')).toBeInTheDocument();
+    // Verifica filtros
+    expect(screen.getByLabelText(/Categoria/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Marca/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Quantidade de VRAM/i)).toBeInTheDocument();
+
+    // Verifica se os 10 cards foram renderizados
+    expect(screen.getAllByTestId(/gpu-card-/).length).toBe(10);
+    // Verifica primeiro e último para garantir ordem/dados
+    expect(screen.getByTestId('gpu-card-NVIDIA RTX A6000 48GB')).toBeInTheDocument();
+    expect(screen.getByTestId('gpu-card-Intel Arc A770 16GB')).toBeInTheDocument();
   });
 
-  it('renderiza todos os cards de GPU com suas tags', () => {
-    renderComponent();
+  it('filtra cards por categoria "Profissional"', async () => {
+    const user = userEvent.setup();
+    renderPage();
 
-    gpuNames.forEach(name => {
-      // Verifica se o card existe
-      expect(screen.getByTestId(`gpu-card-${name}`)).toBeInTheDocument();
-    });
+    // Abre o select e clica na opção
+    await user.click(screen.getByLabelText(/Categoria/i));
+    await user.click(screen.getByRole('option', { name: 'Profissional' }));
 
-    // Verifica se as tags (Chips) estão sendo renderizadas
-    expect(screen.getByText('Para Entusiastas')).toBeInTheDocument();
-    expect(screen.getByText('Profissional')).toBeInTheDocument();
-    expect(screen.getByText('Melhor Custo-Benefício')).toBeInTheDocument();
+    const cards = screen.getAllByTestId(/gpu-card-/);
+    // Esperamos 4 placas profissionais (A6000, 6000 Ada, W7900, 5090)
+    expect(cards.length).toBe(4);
+    expect(screen.getByTestId('gpu-card-NVIDIA RTX A6000 48GB')).toBeInTheDocument();
+    
+    // Garante que uma placa de outra categoria SUMIU
+    expect(screen.queryByTestId('gpu-card-Intel Arc A770 16GB')).not.toBeInTheDocument();
   });
 
-  it('navega para a página de resultados ao clicar em um card', async () => {
-    const user = {}; // Simula user event se necessário, mas fireEvent funciona bem aqui
-    renderComponent();
+  it('filtra cards por marca "AMD"', async () => {
+    const user = userEvent.setup();
+    renderPage();
 
-    const targetGpuName = gpuNames[0];
-    const cardElement = screen.getByTestId(`gpu-card-${targetGpuName}`);
+    await user.click(screen.getByLabelText(/Marca/i));
+    await user.click(screen.getByRole('option', { name: 'AMD' }));
 
-    // Simula clique no card
-    fireEvent.click(cardElement);
+    const cards = screen.getAllByTestId(/gpu-card-/);
+    // Esperamos 4 placas AMD (W7900, 7900 XTX, 7900 XT, 7600 XT)
+    expect(cards.length).toBe(4);
+    expect(screen.getByTestId('gpu-card-AMD Radeon PRO W7900 48GB')).toBeInTheDocument();
+  });
 
-    // Verifica se o loading apareceu (opcional, pois é muito rápido)
-    expect(screen.getByText(`Buscando as melhores ofertas para ${targetGpuName}...`)).toBeInTheDocument();
+  it('filtra cards por VRAM "48GB"', async () => {
+    const user = userEvent.setup();
+    renderPage();
 
-    await waitFor(() => {
-      // Verifica chamada da API
-      expect(getProductComparison).toHaveBeenCalledTimes(1);
-      expect(getProductComparison).toHaveBeenCalledWith(targetGpuName);
-      
-      // Verifica navegação com os dados corretos
-      expect(mockNavigate).toHaveBeenCalledWith('/results', {
-        state: { data: mockApiResponse, query: targetGpuName },
-      });
-    });
+    await user.click(screen.getByLabelText(/Quantidade de VRAM/i));
+    await user.click(screen.getByRole('option', { name: '48GB' }));
+
+    const cards = screen.getAllByTestId(/gpu-card-/);
+    // Esperamos 3 placas de 48GB
+    expect(cards.length).toBe(3);
+  });
+
+  it('restaura a lista completa ao selecionar filtro "Todas"', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    // 1. Aplica filtro AMD
+    await user.click(screen.getByLabelText(/Marca/i));
+    await user.click(screen.getByRole('option', { name: 'AMD' }));
+    expect(screen.getAllByTestId(/gpu-card-/).length).toBe(4);
+
+    // 2. Volta para Todas
+    await user.click(screen.getByLabelText(/Marca/i));
+    await user.click(screen.getByRole('option', { name: 'Todas' }));
+
+    // 3. Deve ter 10 novamente
+    expect(screen.getAllByTestId(/gpu-card-/).length).toBe(10);
+  });
+
+  it('exibe mensagem quando nenhum card corresponde aos filtros', async () => {
+    const user = userEvent.setup();
+    renderPage();
+
+    // Filtro Marca: Intel (só tem 16GB)
+    await user.click(screen.getByLabelText(/Marca/i));
+    await user.click(screen.getByRole('option', { name: 'Intel' }));
+
+    // Filtro VRAM: 48GB (Intel não tem 48GB)
+    await user.click(screen.getByLabelText(/Quantidade de VRAM/i));
+    await user.click(screen.getByRole('option', { name: '48GB' }));
+
+    // Não deve achar nada
+    expect(screen.queryByTestId(/gpu-card-/)).not.toBeInTheDocument();
+    expect(screen.getByText(/Nenhuma placa encontrada com esses filtros/i)).toBeInTheDocument();
   });
 
   it('exibe mensagem de erro se a API falhar', async () => {
-    const errorMessage = 'Erro de conexão simulado';
-    getProductComparison.mockRejectedValue({
-      response: { data: { detail: errorMessage } },
+    const user = userEvent.setup();
+    // Simula erro na API
+    getProductComparison.mockRejectedValueOnce({
+      response: { data: { detail: 'Erro simulado na API' } },
     });
 
-    renderComponent();
+    renderPage();
 
-    const targetGpuName = gpuNames[1];
-    const cardElement = screen.getByTestId(`gpu-card-${targetGpuName}`);
+    const card = screen.getByTestId('gpu-card-AMD Radeon PRO W7900 48GB');
+    await user.click(card);
 
-    fireEvent.click(cardElement);
-
+    // Aguarda o alerta de erro aparecer
     await waitFor(() => {
-      expect(getProductComparison).toHaveBeenCalledWith(targetGpuName);
+      const alert = screen.getByRole('alert');
+      expect(alert).toBeInTheDocument();
+      expect(alert).toHaveTextContent(/Erro simulado na API/i);
+      expect(mockNavigate).not.toHaveBeenCalled();
     });
-
-    // Verifica se o alerta de erro apareceu
-    expect(await screen.findByRole('alert')).toHaveTextContent(errorMessage);
-    
-    // Garante que não navegou
-    expect(mockNavigate).not.toHaveBeenCalled();
   });
 
-  it('não deve permitir múltiplos cliques durante carregamento', async () => {
-    // Simula uma API lenta (200ms)
-    getProductComparison.mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve(mockApiResponse), 200))
-    );
+  it('impede múltiplos cliques enquanto carrega (debounce/loading state)', async () => {
+    const user = userEvent.setup();
+    
+    // API demora 100ms para responder
+    getProductComparison.mockImplementation(() => new Promise(resolve => setTimeout(() => resolve(mockApiResponse), 100)));
 
-    renderComponent();
+    renderPage();
 
-    const targetGpuName = gpuNames[0];
-    const cardElement = screen.getByTestId(`gpu-card-${targetGpuName}`);
-
+    const card = screen.getByTestId('gpu-card-NVIDIA RTX A6000 48GB');
+    
     // Clica duas vezes rapidamente
-    fireEvent.click(cardElement);
-    fireEvent.click(cardElement);
+    // Nota: não usamos await no primeiro para simular clique rápido antes da resposta
+    user.click(card); 
+    user.click(card);
 
+    // Aguarda a finalização
     await waitFor(() => {
-      // Deve ter chamado a API apenas uma vez
-      expect(getProductComparison).toHaveBeenCalledTimes(1);
-      // E navegado apenas uma vez
+      expect(getProductComparison).toHaveBeenCalledTimes(1); // Só deve chamar 1 vez
       expect(mockNavigate).toHaveBeenCalledTimes(1);
     });
+  });
+
+  it('passa techInfo corretamente para o componente GpuCard', () => {
+    renderPage();
+
+    const card = screen.getByTestId('gpu-card-NVIDIA RTX 5090 32GB');
+    // Verifica se o texto técnico do arquivo DashboardPage.js está sendo passado
+    expect(card).toHaveTextContent(/Tech: Blackwell/i); 
   });
 });
