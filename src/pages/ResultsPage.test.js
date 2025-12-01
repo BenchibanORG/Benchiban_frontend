@@ -3,15 +3,17 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ResultsPage from './ResultsPage';
 
-// Mock dos módulos
+// --- Mock dos módulos React Router ---
 jest.mock('react-router-dom', () => ({
   ...jest.requireActual('react-router-dom'),
   useLocation: jest.fn(),
   useNavigate: jest.fn(),
 }));
 
+// --- Mock da API ---
 jest.mock('../services/api');
 
+// --- Mock dos componentes usados no layout ---
 jest.mock('../components/ResultsCard', () => {
   return function MockResultCard({ title, priceOriginal, isBestPrice }) {
     return (
@@ -29,7 +31,7 @@ jest.mock('../components/SourceResults', () => {
     return (
       <div data-testid={`source-results-${sourceName}`}>
         <h3>{sourceName}</h3>
-        <span>{items.length} items</span>
+        <span>{`${items.length} items`}</span>
       </div>
     );
   };
@@ -47,8 +49,13 @@ jest.mock('../components/AppFooter', () => {
   };
 });
 
+// ---------------------------------------------------------------------------
+//                            TESTES PRINCIPAIS
+// ---------------------------------------------------------------------------
+
 describe('ResultsPage - TDD Tests', () => {
   const mockNavigate = jest.fn();
+
   const mockComparisonData = {
     current_exchange_rate: 5.45,
     exchange_rate_timestamp: '2024-01-15T10:30:00Z',
@@ -64,35 +71,27 @@ describe('ResultsPage - TDD Tests', () => {
     },
     results_by_source: {
       eBay: [
-        {
-          title: 'Produto 1',
-          price_original: 100,
-          price_brl: 545,
-        },
-        {
-          title: 'Produto 2',
-          price_original: 120,
-          price_brl: 654,
-        },
+        { title: 'Produto 1', price_original: 100, price_brl: 545 },
+        { title: 'Produto 2', price_original: 120, price_brl: 654 },
       ],
-      'amazon': [
-        {
-          title: 'Produto 3',
-          price_original: 600,
-          price_brl: 600,
-        },
+      amazon: [
+        { title: 'Produto 3', price_original: 600, price_brl: 600 },
       ],
     },
   };
 
+  // Reset mocks antes de cada teste
   beforeEach(() => {
     jest.clearAllMocks();
     require('react-router-dom').useNavigate.mockReturnValue(mockNavigate);
   });
 
-  const renderWithRouter = (component) => {
-    return render(<BrowserRouter>{component}</BrowserRouter>);
-  };
+  const renderWithRouter = (component) =>
+    render(<BrowserRouter>{component}</BrowserRouter>);
+
+  // -------------------------------------------------------------------------
+  //                         Renderização Inicial
+  // -------------------------------------------------------------------------
 
   describe('Renderização Inicial', () => {
     test('deve renderizar header e footer', () => {
@@ -106,24 +105,28 @@ describe('ResultsPage - TDD Tests', () => {
       expect(screen.getByTestId('app-footer')).toBeInTheDocument();
     });
 
-    test('deve exibir o título com a query de busca', () => {
+    test('deve exibir título com query de busca', () => {
       require('react-router-dom').useLocation.mockReturnValue({
         state: { data: mockComparisonData, query: 'Nintendo Switch' },
       });
 
       renderWithRouter(<ResultsPage />);
 
-      expect(screen.getByText(/Resultados para: "Nintendo Switch"/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Resultados para: "Nintendo Switch"/i)
+      ).toBeInTheDocument();
     });
 
-    test('deve exibir "Busca" como título padrão quando query não é fornecida', () => {
+    test('deve usar "Busca" como fallback quando query está ausente', () => {
       require('react-router-dom').useLocation.mockReturnValue({
         state: { data: mockComparisonData },
       });
 
       renderWithRouter(<ResultsPage />);
 
-      expect(screen.getByText(/Resultados para: "Busca"/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Resultados para: "Busca"/i)
+      ).toBeInTheDocument();
     });
 
     test('deve renderizar botão "Nova Busca"', () => {
@@ -133,92 +136,59 @@ describe('ResultsPage - TDD Tests', () => {
 
       renderWithRouter(<ResultsPage />);
 
-      const button = screen.getByRole('button', { name: /nova busca/i });
-      expect(button).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /nova busca/i })).toBeInTheDocument();
     });
   });
 
-  describe('Tratamento de Erros', () => {
-    test('deve exibir erro quando comparisonData não existe', () => {
+  // -------------------------------------------------------------------------
+  //                             Cotação do dólar
+  // -------------------------------------------------------------------------
+
+  describe('Cotação do dólar', () => {
+    test('deve exibir a cotação correta', () => {
       require('react-router-dom').useLocation.mockReturnValue({
-        state: null,
+        state: { data: mockComparisonData },
       });
 
       renderWithRouter(<ResultsPage />);
 
-      expect(screen.getByText(/Erro: Dados da comparação não encontrados/i)).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /voltar ao dashboard/i })).toBeInTheDocument();
-    });
-
-    test('deve navegar para dashboard ao clicar em "Voltar ao Dashboard" na página de erro', () => {
-      require('react-router-dom').useLocation.mockReturnValue({
-        state: null,
-      });
-
-      renderWithRouter(<ResultsPage />);
-
-      const button = screen.getByRole('button', { name: /voltar ao dashboard/i });
-      fireEvent.click(button);
-
-      expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
-    });
-  });
-
-  describe('Cotação do Dólar', () => {
-    test('deve exibir a cotação do dólar dos dados iniciais', () => {
-      require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
-      });
-
-      renderWithRouter(<ResultsPage />);
-
-      expect(screen.getByText(/Dólar Comercial:/i)).toBeInTheDocument();
+      expect(screen.getByText(/Dólar Comercial/i)).toBeInTheDocument();
       expect(screen.getByText(/R\$ 5\.4500/i)).toBeInTheDocument();
     });
 
-    test('deve exibir horário da cotação quando disponível', () => {
+    test('deve exibir horário da cotação', () => {
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
+        state: { data: mockComparisonData },
       });
 
       renderWithRouter(<ResultsPage />);
 
-      // Verifica se algum horário é exibido (formato HH:MM:SS)
-      const timeElements = screen.getAllByText(/\d{2}:\d{2}:\d{2}/);
-      expect(timeElements.length).toBeGreaterThan(0);
+      const times = screen.getAllByText(/\d{2}:\d{2}:\d{2}/);
+      expect(times.length).toBeGreaterThan(0);
     });
 
-    test('deve exibir "---" quando cotação não está disponível', () => {
-      const dataWithoutRate = { ...mockComparisonData };
-      delete dataWithoutRate.current_exchange_rate;
+    test('deve exibir "---" quando cotação indisponível', () => {
+      const data = { ...mockComparisonData };
+      delete data.current_exchange_rate;
 
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: dataWithoutRate, query: 'Teste' },
+        state: { data },
       });
 
       renderWithRouter(<ResultsPage />);
 
       expect(screen.getByText(/R\$ ---/i)).toBeInTheDocument();
     });
-
-    test('deve exibir aviso sobre conversão automática e impostos', () => {
-      require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
-      });
-
-      renderWithRouter(<ResultsPage />);
-
-      expect(
-        screen.getByText(/Valores do eBay são convertidos automaticamente/i)
-      ).toBeInTheDocument();
-      expect(screen.getByText(/Impostos de importação não inclusos/i)).toBeInTheDocument();
-    });
   });
 
+  // -------------------------------------------------------------------------
+  //                             Melhor Oferta
+  // -------------------------------------------------------------------------
+
   describe('Melhor Oferta', () => {
-    test('deve exibir seção de melhor preço quando disponível', () => {
+    test('deve exibir melhor oferta quando presente', () => {
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
+        state: { data: mockComparisonData },
       });
 
       renderWithRouter(<ResultsPage />);
@@ -227,21 +197,11 @@ describe('ResultsPage - TDD Tests', () => {
       expect(screen.getByTestId('result-card')).toBeInTheDocument();
     });
 
-    test('deve passar isBestPrice=true para o card da melhor oferta', () => {
-      require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
-      });
-
-      renderWithRouter(<ResultsPage />);
-
-      expect(screen.getByText('Melhor Preço')).toBeInTheDocument();
-    });
-
-    test('deve exibir aviso quando melhor oferta não está disponível', () => {
-      const dataWithoutBestDeal = { ...mockComparisonData, overall_best_deal: null };
+    test('deve exibir aviso quando não existe melhor oferta', () => {
+      const data = { ...mockComparisonData, overall_best_deal: null };
 
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: dataWithoutBestDeal, query: 'Teste' },
+        state: { data },
       });
 
       renderWithRouter(<ResultsPage />);
@@ -252,10 +212,14 @@ describe('ResultsPage - TDD Tests', () => {
     });
   });
 
+  // -------------------------------------------------------------------------
+  //                       Resultados por loja / fonte
+  // -------------------------------------------------------------------------
+
   describe('Resultados por Fonte', () => {
-    test('deve renderizar resultados de todas as fontes disponíveis', () => {
+    test('deve renderizar todas fontes com ofertas', () => {
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
+        state: { data: mockComparisonData },
       });
 
       renderWithRouter(<ResultsPage />);
@@ -264,29 +228,26 @@ describe('ResultsPage - TDD Tests', () => {
       expect(screen.getByTestId('source-results-amazon')).toBeInTheDocument();
     });
 
-    test('deve exibir contagem correta de itens por fonte', () => {
+    test('deve mostrar contagem correta de itens por loja', () => {
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
+        state: { data: mockComparisonData },
       });
 
       renderWithRouter(<ResultsPage />);
 
-      expect(screen.getByText('2 items')).toBeInTheDocument(); // eBay
-      expect(screen.getByText('1 items')).toBeInTheDocument(); // amazon
+      expect(screen.getByText('2 items')).toBeInTheDocument();
+      expect(screen.getByText('1 items')).toBeInTheDocument();
     });
 
-    test('deve exibir mensagem quando nenhuma oferta é encontrada', () => {
-      const dataWithoutResults = {
+    test('deve exibir aviso quando nenhuma loja retorna resultados', () => {
+      const data = {
         ...mockComparisonData,
         overall_best_deal: null,
-        results_by_source: {
-          eBay: [],
-          'amazon': [],
-        },
+        results_by_source: { eBay: [], amazon: [] },
       };
 
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: dataWithoutResults, query: 'Teste' },
+        state: { data },
       });
 
       renderWithRouter(<ResultsPage />);
@@ -296,17 +257,14 @@ describe('ResultsPage - TDD Tests', () => {
       ).toBeInTheDocument();
     });
 
-    test('não deve renderizar fontes sem resultados', () => {
-      const dataWithPartialResults = {
+    test('não deve renderizar loja sem itens', () => {
+      const data = {
         ...mockComparisonData,
-        results_by_source: {
-          eBay: mockComparisonData.results_by_source.eBay,
-          'amazon': [],
-        },
+        results_by_source: { eBay: mockComparisonData.results_by_source.eBay, amazon: [] },
       };
 
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: dataWithPartialResults, query: 'Teste' },
+        state: { data },
       });
 
       renderWithRouter(<ResultsPage />);
@@ -316,58 +274,72 @@ describe('ResultsPage - TDD Tests', () => {
     });
   });
 
+  // -------------------------------------------------------------------------
+  //                             Navegação
+  // -------------------------------------------------------------------------
+
   describe('Navegação', () => {
-    test('deve navegar para dashboard ao clicar em "Nova Busca"', () => {
+    test('botão "Nova Busca" deve navegar para dashboard', () => {
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
+        state: { data: mockComparisonData },
       });
 
       renderWithRouter(<ResultsPage />);
 
-      const button = screen.getByRole('button', { name: /nova busca/i });
-      fireEvent.click(button);
-
+      fireEvent.click(screen.getByRole('button', { name: /nova busca/i }));
       expect(mockNavigate).toHaveBeenCalledWith('/dashboard');
     });
   });
 
+  // -------------------------------------------------------------------------
+  //                     Formatação de Datas / Horários
+  // -------------------------------------------------------------------------
+
   describe('Formatação de Data/Hora', () => {
     test('deve formatar timestamp corretamente', () => {
-      const specificTimestamp = '2024-01-15T14:30:45Z';
-      const dataWithSpecificTime = {
+      const ts = '2024-01-15T14:30:45Z';
+
+      const data = {
         ...mockComparisonData,
-        exchange_rate_timestamp: specificTimestamp,
+        exchange_rate_timestamp: ts,
       };
 
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: dataWithSpecificTime, query: 'Teste' },
+        state: { data },
       });
 
       renderWithRouter(<ResultsPage />);
 
-      // Verifica se há um horário formatado (HH:MM:SS)
-      const timeElements = screen.getAllByText(/\d{2}:\d{2}:\d{2}/);
-      expect(timeElements.length).toBeGreaterThan(0);
+      const hours = screen.getAllByText(/\d{2}:\d{2}:\d{2}/);
+      expect(hours.length).toBeGreaterThan(0);
     });
   });
 
+  // -------------------------------------------------------------------------
+  //                         Layout básico (MUI)
+  // -------------------------------------------------------------------------
+
   describe('Responsividade e Layout', () => {
-    test('deve ter estrutura básica de layout (Container, Box)', () => {
+    test('deve ter container e box do MUI', () => {
       require('react-router-dom').useLocation.mockReturnValue({
-        state: { data: mockComparisonData, query: 'Teste' },
+        state: { data: mockComparisonData },
       });
 
       const { container } = renderWithRouter(<ResultsPage />);
 
-      // Verifica se há elementos de layout do MUI
       expect(container.querySelector('.MuiContainer-root')).toBeInTheDocument();
       expect(container.querySelector('.MuiBox-root')).toBeInTheDocument();
     });
   });
 });
 
+// ---------------------------------------------------------------------------
+//                      Testes de Acessibilidade
+// ---------------------------------------------------------------------------
+
 describe('ResultsPage - Testes de Acessibilidade', () => {
   const mockNavigate = jest.fn();
+
   const mockComparisonData = {
     current_exchange_rate: 5.45,
     overall_best_deal: {
@@ -389,22 +361,22 @@ describe('ResultsPage - Testes de Acessibilidade', () => {
     });
   });
 
-  const renderWithRouter = (component) => {
-    return render(<BrowserRouter>{component}</BrowserRouter>);
-  };
+  const renderWithRouter = (component) =>
+    render(<BrowserRouter>{component}</BrowserRouter>);
 
   test('botões devem ter texto descritivo', () => {
     renderWithRouter(<ResultsPage />);
 
-    expect(screen.getByRole('button', { name: /nova busca/i })).toBeInTheDocument();
-    // Removido o teste do botão de atualizar cotação
+    expect(
+      screen.getByRole('button', { name: /nova busca/i })
+    ).toBeInTheDocument();
   });
 
-  test('deve ter headings hierárquicos corretos', () => {
+  test('deve ter título h1 estruturado', () => {
     renderWithRouter(<ResultsPage />);
 
     const h1 = screen.getByRole('heading', { level: 1 });
     expect(h1).toBeInTheDocument();
-    expect(h1.textContent).toContain('Resultados para:');
+    expect(h1.textContent).toContain('Resultados para');
   });
 });

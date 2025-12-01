@@ -159,7 +159,7 @@ function HistoryPage() {
 
         {currencyMode === "USD" && (
           <>
-            {/* 🔥 SOMENTE EBAY EM USD */}
+            {/* SOMENTE EBAY EM USD */}
             {dp.ebay_usd && (
               <Typography sx={{ color: "#0064D2", fontWeight: 600 }}>
                 eBay: $ {dp.ebay_usd.toLocaleString("en-US", { minimumFractionDigits: 2 })}
@@ -216,17 +216,22 @@ function HistoryPage() {
 
         <Paper sx={{ p: 3, mb: 5 }}>
           <FormControl fullWidth>
-            <InputLabel>Selecione a GPU</InputLabel>
+            <InputLabel id="gpu-select-label">Selecione a GPU</InputLabel>
+
             <Select
+              labelId="gpu-select-label"
+              id="gpu-select"
               value={selectedGpu}
               label="Selecione a GPU"
               onChange={(e) => handleSelectGpu(e.target.value)}
+              data-testid="gpu-select"
             >
-              {GPU_OPTIONS.map(gpu => (
+              {GPU_OPTIONS.map((gpu) => (
                 <MenuItem key={gpu} value={gpu}>{gpu}</MenuItem>
               ))}
             </Select>
           </FormControl>
+
         </Paper>
 
         {error && (
@@ -271,8 +276,6 @@ function HistoryPage() {
                   <XAxis dataKey="displayDate" angle={-45} textAnchor="end" height={70} />
                   <YAxis />
                   <Tooltip content={<CustomTooltip />} />
-
-                  {/* 🔥 LEGENDA NO TOPO */}
                   <Legend verticalAlign="top" align="center" />
 
                   {/* BRL */}

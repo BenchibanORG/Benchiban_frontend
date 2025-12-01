@@ -4,14 +4,16 @@ import ResultCard from './ResultsCard';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 
 function SourceResults({ sourceName, items, exchangeRate }) {
-  // Formata o nome da fonte para exibição (Ex: 'amazon' -> 'Amazon')
+  if (!items || items.length === 0) {
+    return null;
+  }
+
   const formattedSource = sourceName.charAt(0).toUpperCase() + sourceName.slice(1);
 
-  // Define cor do cabeçalho baseado na fonte
   const getHeaderColor = (source) => {
     const s = source.toLowerCase();
-    if (s.includes('amazon')) return '#FF9900'; // Laranja Amazon
-    if (s.includes('ebay')) return '#0064D2';   // Azul eBay
+    if (s.includes('amazon')) return '#FF9900';
+    if (s.includes('ebay')) return '#0064D2';
     return '#333';
   };
 
@@ -24,7 +26,7 @@ function SourceResults({ sourceName, items, exchangeRate }) {
         sx={{ 
           p: 2, 
           mb: 2, 
-          bgcolor: `${headerColor}15`, // Cor com 15% opacidade
+          bgcolor: `${headerColor}15`,
           borderLeft: `6px solid ${headerColor}`,
           borderRadius: 2,
           display: 'flex',
