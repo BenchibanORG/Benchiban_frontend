@@ -1,11 +1,10 @@
-import React, { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { Link, Typography, InputAdornment, IconButton } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { registerUser } from '../services/api';
 import AuthPageLayout from '../components/AuthPageLayout';
 import AuthFormWrapper from '../components/AuthFormWrapper';
-// Importa os novos componentes
 import StyledAuthTextField from '../components/StyledAuthTextField';
 import { useAuthSubmit } from '../hooks/useAuthSubmit';
 
@@ -16,24 +15,40 @@ function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // Usa o Hook personalizado
+  const navigate = useNavigate(); // Hook de navegação
+
+  // Proteção de Rota 
+  // Se o usuário já tem token, manda ele pro Dashboard
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
+  // ----------------------------------------
+
   const { isLoading, error, success, handleSubmit, setError } = useAuthSubmit(
     registerUser,
-    '/login',
+    '/login', 
     'Cadastro realizado com sucesso! Redirecionando para o login...'
   );
 
   const handleLocalSubmit = (event) => {
     event.preventDefault();
+    
+    // Regex robusto para email
     const emailRegex = /^(?=.{1,254}$)(?=.{1,64}@)[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    
     if (!emailRegex.test(email)) {
       setError('Por favor, digite um email válido.');
       return;
     }
+    
     if (password !== confirmPassword) {
       setError('As senhas não coincidem!');
       return;
     }
+    
     handleSubmit([email, password]);
   };
 
@@ -59,7 +74,6 @@ function RegisterPage() {
         success={success}
         bottomLink={bottomLink}
       >
-        {/* --- CÓDIGO REDUZIDO --- */}
         <StyledAuthTextField
           label="Endereço de E-mail"
           id="email"

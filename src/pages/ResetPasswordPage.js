@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Box, TextField, Button, Alert, Link, Typography, IconButton, InputAdornment } from '@mui/material';
+import React, { useState, useEffect } from 'react';
+import { Box, TextField, Button, Alert, Typography, IconButton, InputAdornment } from '@mui/material';
 import { Visibility, VisibilityOff } from '@mui/icons-material';
-import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import AuthPageLayout from '../components/AuthPageLayout';
 import { resetPassword } from '../services/api';
 
@@ -13,11 +13,37 @@ const ResetPasswordPage = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  
   const [alert, setAlert] = useState({ type: '', message: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Estado para bloquear o formulário se o token for inválido
+  const [isTokenValid, setIsTokenValid] = useState(true);
+
+  // --- VALIDAÇÕES DE ROTA E TOKEN ---
+  useEffect(() => {
+    // Se já estiver logado, manda para o dashboard
+    const authToken = localStorage.getItem('token');
+    if (authToken) {
+      navigate('/dashboard', { replace: true });
+      return;
+    }
+
+    // Valida se o Token de recuperação existe na URL assim que a tela carrega
+    const queryToken = new URLSearchParams(location.search).get('token');
+    if (!queryToken) {
+      setIsTokenValid(false);
+      setAlert({
+        type: 'error',
+        message: 'Link inválido ou token ausente. Por favor, solicite uma nova redefinição de senha.'
+      });
+    }
+  }, [navigate, location]);
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (!isTokenValid) return;
 
     if (!password || !confirmPassword) {
       setAlert({ type: 'error', message: 'Por favor, preencha todos os campos.' });
@@ -34,14 +60,8 @@ const ResetPasswordPage = () => {
       return;
     }
 
+    // Pega o token novamente para envio
     const token = new URLSearchParams(location.search).get('token');
-    if (!token) {
-      setAlert({
-        type: 'error',
-        message: 'Token de redefinição ausente ou inválido. Por favor, solicite um novo link.'
-      });
-      return;
-    }
 
     try {
       setIsSubmitting(true);
@@ -50,13 +70,16 @@ const ResetPasswordPage = () => {
       const response = await resetPassword(token, password);
 
       setAlert({ type: 'success', message: response.message });
+      
+      // Redireciona após 3 segundos
       setTimeout(() => {
         navigate('/login');
       }, 3000);
+
     } catch (error) {
       const errorMsg =
         error?.response?.data?.detail ||
-        'Erro ao redefinir a senha. Por favor, tente novamente.';
+        'Erro ao redefinir a senha. O link pode ter expirado.';
       setAlert({ type: 'error', message: errorMsg });
       setIsSubmitting(false);
     }
@@ -78,6 +101,7 @@ const ResetPasswordPage = () => {
         <TextField
           required
           fullWidth
+          disabled={!isTokenValid || isSubmitting}
           name="password"
           type={showPassword ? 'text' : 'password'}
           id="password"
@@ -94,6 +118,7 @@ const ResetPasswordPage = () => {
                   aria-label="toggle password visibility"
                   onClick={() => setShowPassword((prev) => !prev)}
                   edge="end"
+                  disabled={!isTokenValid}
                 >
                   {showPassword ? <VisibilityOff /> : <Visibility />}
                 </IconButton>
@@ -105,6 +130,7 @@ const ResetPasswordPage = () => {
         <TextField
           required
           fullWidth
+          disabled={!isTokenValid || isSubmitting}
           name="confirmPassword"
           type={showConfirmPassword ? 'text' : 'password'}
           id="confirmPassword"
@@ -121,6 +147,7 @@ const ResetPasswordPage = () => {
                   aria-label="toggle password visibility"
                   onClick={() => setShowConfirmPassword((prev) => !prev)}
                   edge="end"
+                  disabled={!isTokenValid}
                 >
                   {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
                 </IconButton>
@@ -134,7 +161,7 @@ const ResetPasswordPage = () => {
           fullWidth
           variant="contained"
           color="primary"
-          disabled={isSubmitting}
+          disabled={!isTokenValid || isSubmitting}
           sx={{ mt: 3, mb: 2 }}
         >
           {isSubmitting ? 'Salvando...' : 'Salvar Nova Senha'}
@@ -148,12 +175,6 @@ const ResetPasswordPage = () => {
         >
           Voltar para o login
         </Button>
-
-        <Box mt={2} textAlign="center">
-          <Link component={RouterLink} to="/login" variant="body2">
-            Voltar ao login
-          </Link>
-        </Box>
       </Box>
     </AuthPageLayout>
   );

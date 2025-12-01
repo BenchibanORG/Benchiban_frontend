@@ -97,6 +97,22 @@ export const getExchangeRate = async (refresh = false) => {
   }
 };
 
+// --- Buscar Histórico de Preços ---
+export const getProductHistory = async (productName, periodDays = 30) => {
+  try {
+    const response = await axios.get(`${API_URL}/api/products/history`, {
+      params: { 
+        product_name: productName,
+        period_days: periodDays
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Erro ao buscar histórico:", error);
+    throw error;
+  }
+};
+
 const api = {
   registerUser,
   loginUser,
@@ -104,6 +120,7 @@ const api = {
   resetPassword,
   getProductComparison,
   getExchangeRate,
+  getProductHistory
 };
 
 export default api;
