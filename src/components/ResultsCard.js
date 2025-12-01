@@ -2,64 +2,88 @@ import React from 'react';
 import { Card, CardContent, Typography, Button, Box, Chip, Rating } from '@mui/material';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import StarIcon from '@mui/icons-material/Star';
-import PublicIcon from '@mui/icons-material/Public'; 
+import PublicIcon from '@mui/icons-material/Public';
 
-function ResultCard({ 
-  title, 
-  price, 
-  priceOriginal, 
-  currencyOriginal, 
-  priceBrl, 
-  exchangeRate, 
-  link, 
-  seller, 
-  rating, 
-  isBestPrice = false 
+function ResultCard({
+  title,
+  price,                    // Preço em BRL (lojas nacionais)
+  priceOriginal,            // Preço original (normalmente USD no eBay)
+  currencyOriginal,         // Pode vir errado do eBay (ex: 'BRL')
+  priceBrl,                 // Preço já convertido (fallback)
+  exchangeRate,             // Cotação atual
+  link,
+  seller,
+  rating,
+  isBestPrice = false,
+  source,                   // <--- NOVA PROPS OPCIONAL: 'eBay', 'Kabum', etc (se vier do backend)
 }) {
+  // === REGRA DE OURO: SE FOR DO EBAY → SEMPRE É USD ===
+  const isFromEbay = source?.toLowerCase().includes('ebay') || 
+                     link?.includes('ebay.com') || 
+                     link?.includes('ebay.it') ||
+                     seller?.toLowerCase().includes('ebay');
+
+  const currency = (currencyOriginal || '').toString().trim().toUpperCase();
   
-  // --- Lógica de Preço Inteligente (Igual anterior) ---
+  // Força USD se for do eBay, mesmo que a API tenha mandado 'BRL' por engano
+  const effectiveCurrency = isFromEbay ? 'USD' : currency;
+
+  const basePrice = priceOriginal ?? price;
+
   let displayMainPrice = '---';
   let displaySecondaryPrice = null;
   let isImported = false;
 
-  const currency = currencyOriginal || 'BRL';
-  const basePrice = priceOriginal || price;
-
-  if (currency === 'USD') {
+  if (effectiveCurrency === 'USD') {
     isImported = true;
-    const finalBrlVal = (exchangeRate && basePrice) 
-      ? basePrice * exchangeRate 
-      : priceBrl;
 
-    if (finalBrlVal) {
-      displayMainPrice = finalBrlVal.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    }
-    if (basePrice) {
-      displaySecondaryPrice = basePrice.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    // Preço principal em BRL: usa priceBrl (já convertido) ou calcula com exchangeRate
+    const finalBrlValue = priceBrl ?? (exchangeRate && priceOriginal ? priceOriginal * exchangeRate : null);
+
+    if (finalBrlValue) {
+      displayMainPrice = Number(finalBrlValue).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
+    } else {
+      displayMainPrice = 'Cotação indisponível';
     }
 
+    // Sempre mostra o preço original em USD (porque é do eBay!)
+    if (priceOriginal) {
+      displaySecondaryPrice = Number(priceOriginal).toLocaleString('en-US', {
+        style: 'currency',
+        currency: 'USD'
+      });
+    }
   } else {
+    // Produto nacional (Kabum, Pichau, etc)
     if (basePrice) {
-      displayMainPrice = basePrice.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+      displayMainPrice = Number(basePrice).toLocaleString('pt-BR', {
+        style: 'currency',
+        currency: 'BRL'
+      });
     } else {
       displayMainPrice = 'Preço indisponível';
     }
   }
 
-  // --- Lógica de Avaliação ---
+  // === Avaliação (igual antes) ===
   const renderRating = () => {
-    if (!rating) return null;
+    if (!rating && rating !== 0) return null;
+
     if (rating > 5) {
       return (
-        <Chip 
-          icon={<StarIcon style={{ color: '#faaf00' }} />} 
-          label={`${rating}% positivo`} 
-          size="small" 
-          variant="outlined" 
+        <Chip
+          icon={<StarIcon style={{ color: '#faaf00' }} />}
+          label={`${rating}% positivo`}
+          size="small"
+          variant="outlined"
           sx={{ mt: 1, borderColor: '#faaf00', color: '#ed6c02', fontWeight: 'bold' }}
         />
       );
     }
+
     return (
       <Box display="flex" alignItems="center" mt={1}>
         <Rating value={parseFloat(rating)} precision={0.1} readOnly size="small" />
@@ -79,9 +103,8 @@ function ResultCard({
         flexDirection: 'column',
         justifyContent: 'space-between',
         p: 2,
-        // Mantém visual limpo para cards normais, destaca apenas o bestPrice
         borderColor: isBestPrice ? 'primary.main' : 'grey.300',
-        boxShadow: isBestPrice ? 4 : 1, 
+        boxShadow: isBestPrice ? 4 : 1,
         borderWidth: isBestPrice ? 2 : 1,
         width: isBestPrice ? '100%' : 'auto',
         maxWidth: isBestPrice ? '1100px' : 'auto',
@@ -89,26 +112,25 @@ function ResultCard({
       }}
     >
       <CardContent sx={{ flexGrow: 1, p: 0, pb: 2 }}>
-        
+        {/* Badge Importado - só aparece se for eBay */}
         {isImported && (
-          <Chip 
-            label="Importado (EUA)" 
-            size="small" 
-            color="info" 
-            variant="outlined" 
+          <Chip
+            label="Importado (EUA)"
+            size="small"
+            color="info"
+            variant="outlined"
             icon={<PublicIcon fontSize="small" />}
-            sx={{ mb: 1, height: 20, fontSize: '0.7rem', border: 'none', pl: 0 }} 
+            sx={{ mb: 1, height: 20, fontSize: '0.7rem', border: 'none', pl: 0 }}
           />
         )}
 
-        {/* Título: Usa h5 se for destaque, subtitle2 se for lista (para caber melhor) */}
         <Typography
-          variant={isBestPrice ? "h5" : "subtitle2"} 
+          variant={isBestPrice ? "h5" : "subtitle2"}
           component="div"
           title={title}
-          sx={{ 
-            fontWeight: 'bold', 
-            lineHeight: 1.2, 
+          sx={{
+            fontWeight: 'bold',
+            lineHeight: 1.2,
             mb: 1,
             color: isBestPrice ? 'primary.main' : 'text.primary',
             display: '-webkit-box',
@@ -120,19 +142,18 @@ function ResultCard({
           {title}
         </Typography>
 
-        {/* Preço: Usa h4 se for destaque, h6 se for lista (igual a sua imagem) */}
-        <Typography 
-            variant={isBestPrice ? "h4" : "h6"} 
-            color="text.primary" 
-            sx={{ fontWeight: 'bold', mt: 1, mb: 0 }}
+        <Typography
+          variant={isBestPrice ? "h4" : "h6"}
+          color="text.primary"
+          sx={{ fontWeight: 'bold', mt: 1, mb: 0 }}
         >
           {displayMainPrice}
         </Typography>
 
         {displaySecondaryPrice && (
-            <Typography variant="caption" color="text.secondary" sx={{ mb: 2 }}>
-                Original: <strong>{displaySecondaryPrice}</strong>
-            </Typography>
+          <Typography variant="caption" color="text.secondary" sx={{ mb: 2 }}>
+            Original: <strong>{displaySecondaryPrice}</strong>
+          </Typography>
         )}
 
         <Box display="flex" alignItems="center" mt={isImported ? 0 : 1} color="text.secondary">
@@ -151,7 +172,7 @@ function ResultCard({
         href={link}
         target="_blank"
         rel="noopener noreferrer"
-        size={isBestPrice ? "medium" : "small"} // Botão menor na lista
+        size={isBestPrice ? "medium" : "small"}
         sx={{
           mt: 'auto',
           textTransform: 'none',
