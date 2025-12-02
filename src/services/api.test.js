@@ -6,6 +6,7 @@ import {
   resetPassword,
   getProductComparison,
   getExchangeRate,
+  getProductHistory,
 } from './api';
 
 // Mock simples
@@ -110,7 +111,7 @@ describe('API Service - 100% cobertura (JavaScript puro)', () => {
     });
   });
 
-  it('getExchangeRate - erro: loga no console e relança (cobre linhas 89-96)', async () => {
+  it('getExchangeRate - erro: loga no console e relança', async () => {
     const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
     const error = new Error('API fora do ar');
 
@@ -119,6 +120,48 @@ describe('API Service - 100% cobertura (JavaScript puro)', () => {
     await expect(getExchangeRate()).rejects.toThrow();
 
     expect(consoleSpy).toHaveBeenCalledWith('Erro na API de cotação:', error);
+    consoleSpy.mockRestore();
+  });
+
+  // --- NOVOS TESTES: getProductHistory ---
+
+  it('getProductHistory - busca histórico com parâmetros corretos', async () => {
+    const mockHistory = { history: [{ date: '2023-01-01', price: 1000 }] };
+    axios.get.mockResolvedValue({ data: mockHistory });
+
+    const result = await getProductHistory('RTX 4090', 60);
+
+    expect(axios.get).toHaveBeenCalledWith(`${API_URL}/api/products/history`, {
+      params: { 
+        product_name: 'RTX 4090',
+        period_days: 60
+      }
+    });
+    expect(result).toEqual(mockHistory);
+  });
+
+  it('getProductHistory - usa periodDays padrão (30) se não informado', async () => {
+    axios.get.mockResolvedValue({ data: [] });
+
+    await getProductHistory('RTX 4080');
+
+    expect(axios.get).toHaveBeenCalledWith(`${API_URL}/api/products/history`, {
+      params: { 
+        product_name: 'RTX 4080',
+        period_days: 30 // Valor default
+      }
+    });
+  });
+
+  it('getProductHistory - erro: loga no console e relança exceção', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+    const error = new Error('Erro no histórico');
+
+    axios.get.mockRejectedValue(error);
+
+    await expect(getProductHistory('RTX 5090')).rejects.toThrow('Erro no histórico');
+
+    expect(consoleSpy).toHaveBeenCalledWith('Erro ao buscar histórico:', error);
     consoleSpy.mockRestore();
   });
 });

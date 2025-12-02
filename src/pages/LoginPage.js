@@ -25,11 +25,19 @@ function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Verifica se o usuário foi redirecionado de uma rota protegida
+  // Se já estiver logado, vai para o Dashboard ---
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
+  // ------------------------------------------------------------------
+
+  // Verifica se o usuário foi redirecionado de uma rota protegida (exibição de aviso)
   useEffect(() => {
     if (location.state?.unauthorized) {
       setWarning('Você precisa estar logado para acessar esta página.');
-      // Limpa o estado após 5 segundos
       const timer = setTimeout(() => setWarning(''), 5000);
       return () => clearTimeout(timer);
     }

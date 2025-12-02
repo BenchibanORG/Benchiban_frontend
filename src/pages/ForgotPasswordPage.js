@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
-import { Link as RouterLink } from 'react-router-dom';
+// src/pages/ForgotPasswordPage.js
+import React, { useState, useEffect } from 'react'; // Adicionado useEffect
+import { Link as RouterLink, useNavigate } from 'react-router-dom'; // Adicionado useNavigate
 import { Link, Typography } from '@mui/material';
 import { forgotPassword } from '../services/api';
 import AuthPageLayout from '../components/AuthPageLayout';
@@ -11,21 +12,38 @@ function ForgotPasswordPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  
+  const navigate = useNavigate(); // Hook de navegação
+
+  // --- LÓGICA DE PROTEÇÃO---
+  // Se o usuário já estiver logado, encaminha para dashboard
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      navigate('/dashboard', { replace: true });
+    }
+  }, [navigate]);
+  // ------------------------------------
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     setError('');
     setSuccess('');
+    
+    // Regex robusto para validação de email
     const emailRegex = /^(?=.{1,254}$)(?=.{1,64}@)[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-zA-Z0-9!#$%&'*+/=?^_`{|}~-]+)*@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    
     if (!email || !emailRegex.test(email)) {
       setError('Por favor, digite um endereço de e-mail válido.');
       return;
     }
+    
     try {
       setIsLoading(true);
       const response = await forgotPassword(email);
       setSuccess(response.message);
-      setEmail('');
+      // Opcional: Limpar o campo apenas se quiser forçar o usuário a ler a mensagem
+      setEmail(''); 
     } catch (err) {
       setError('Ocorreu um erro. Por favor, tente novamente mais tarde.');
     } finally {

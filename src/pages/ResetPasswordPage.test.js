@@ -26,19 +26,19 @@ describe('Componente ResetPasswordPage', () => {
 
     const novaSenhaInput = screen.getByTestId('password-input');
     const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
-    const botoesVisibilidade = screen.getAllByLabelText(/toggle password visibility/i);
+    const botoes = screen.getAllByLabelText(/toggle password visibility/i);
 
     expect(novaSenhaInput).toHaveAttribute('type', 'password');
     expect(confirmarSenhaInput).toHaveAttribute('type', 'password');
 
-    fireEvent.click(botoesVisibilidade[0]);
-    fireEvent.click(botoesVisibilidade[1]);
+    fireEvent.click(botoes[0]);
+    fireEvent.click(botoes[1]);
 
     expect(novaSenhaInput).toHaveAttribute('type', 'text');
     expect(confirmarSenhaInput).toHaveAttribute('type', 'text');
 
-    fireEvent.click(botoesVisibilidade[0]);
-    fireEvent.click(botoesVisibilidade[1]);
+    fireEvent.click(botoes[0]);
+    fireEvent.click(botoes[1]);
 
     expect(novaSenhaInput).toHaveAttribute('type', 'password');
     expect(confirmarSenhaInput).toHaveAttribute('type', 'password');
@@ -67,7 +67,6 @@ describe('Componente ResetPasswordPage', () => {
     jest.advanceTimersByTime(3000);
   });
 
-  // 🧪 Novo: campos vazios
   test('deve exibir erro ao enviar com campos vazios', async () => {
     renderComponent();
 
@@ -78,7 +77,6 @@ describe('Componente ResetPasswordPage', () => {
     expect(resetPassword).not.toHaveBeenCalled();
   });
 
-  // 🧪 Novo: senhas diferentes
   test('deve exibir erro quando as senhas não coincidem', async () => {
     renderComponent();
 
@@ -87,14 +85,13 @@ describe('Componente ResetPasswordPage', () => {
     const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
 
     fireEvent.change(novaSenhaInput, { target: { value: 'Senha123' } });
-    fireEvent.change(confirmarSenhaInput, { target: { value: 'Senha456' } });
+    fireEvent.change(confirmarSenhaInput, { target: { value: 'OutraSenha' } });
     fireEvent.click(botaoSalvar);
 
     expect(await screen.findByText(/as senhas não coincidem/i)).toBeInTheDocument();
     expect(resetPassword).not.toHaveBeenCalled();
   });
 
-  // 🧪 Novo: senha curta
   test('deve exibir erro quando a senha tiver menos de 8 caracteres', async () => {
     renderComponent();
 
@@ -110,28 +107,27 @@ describe('Componente ResetPasswordPage', () => {
     expect(alert).toHaveTextContent(/mínimo 8 caracteres/i);
   });
 
-  // 🧪 Novo: token ausente
-  test('deve exibir erro quando o token estiver ausente', async () => {
-    renderComponent('/reset-password'); // sem token
+  test('deve exibir mensagem correta quando token estiver ausente', async () => {
+    renderComponent('/reset-password'); // sem ?token=
 
-    const novaSenhaInput = screen.getByTestId('password-input');
-    const confirmarSenhaInput = screen.getByTestId('confirm-password-input');
-    const botaoSalvar = screen.getByRole('button', { name: /salvar nova senha/i });
-
-    fireEvent.change(novaSenhaInput, { target: { value: 'SenhaValida123' } });
-    fireEvent.change(confirmarSenhaInput, { target: { value: 'SenhaValida123' } });
-    fireEvent.click(botaoSalvar);
-
+    // a mensagem aparece imediatamente ao carregar
     expect(
-      await screen.findByText(/token de redefinição ausente ou inválido/i)
+      await screen.findByText(/link inválido ou token ausente/i)
     ).toBeInTheDocument();
+
+    // campos ficam desabilitados
+    expect(screen.getByTestId('password-input')).toBeDisabled();
+    expect(screen.getByTestId('confirm-password-input')).toBeDisabled();
+
+    // botão de salvar desabilitado
+    expect(screen.getByRole('button', { name: /salvar nova senha/i })).toBeDisabled();
+
     expect(resetPassword).not.toHaveBeenCalled();
   });
 
-  // 🧪 Novo: erro de API
   test('deve exibir erro se a API retornar erro', async () => {
     resetPassword.mockRejectedValueOnce({
-      response: { data: { detail: 'Token expirado' } },
+      response: { data: { detail: 'Token expirado' } }
     });
 
     renderComponent();
@@ -144,7 +140,6 @@ describe('Componente ResetPasswordPage', () => {
     fireEvent.change(confirmarSenhaInput, { target: { value: 'SenhaValida123' } });
     fireEvent.click(botaoSalvar);
 
-    const errorAlert = await screen.findByText(/token expirado/i);
-    expect(errorAlert).toBeInTheDocument();
+    expect(await screen.findByText(/token expirado/i)).toBeInTheDocument();
   });
 });

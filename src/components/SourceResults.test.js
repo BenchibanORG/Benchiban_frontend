@@ -2,9 +2,7 @@ import React from 'react';
 import { render, screen } from '@testing-library/react';
 import SourceResults from './SourceResults';
 
-// --- MOCK DO COMPONENTE FILHO ---
-// Isso isola o teste. Não precisamos que o ResultCard faça cálculos reais,
-// apenas verificamos se ele recebeu os props certos do pai.
+// Mock do ResultCard mantido igual
 jest.mock('./ResultsCard', () => {
   return function MockResultCard(props) {
     return (
@@ -25,14 +23,14 @@ const mockItems = [
     currency_original: 'USD',
     price_brl: null,
     link: 'https://ebay.com/123',
-    seller_username: 'PowerSellerUSA', // Caso com username
+    seller_username: 'PowerSellerUSA',
     rating: 99.8,
   },
   {
     title: 'RTX 3080 Usada',
-    price_brl: 2899.90, // Caso com preço BRL direto
+    price_brl: 2899.90,
     link: 'https://amazon.com.br/456',
-    seller: 'Amazon', // Caso sem username
+    seller: 'Amazon',
     rating: 4.7,
   },
   {
@@ -49,14 +47,15 @@ describe('SourceResults', () => {
 
   it('deve renderizar o título da fonte corretamente', () => {
     render(<SourceResults sourceName="ebay" items={mockItems} exchangeRate={exchangeRate} />);
-    // Verifica se o título "TOP 3 Melhores Ofertas - ebay" apareceu
-    expect(screen.getByText(/Melhores Ofertas - ebay/i)).toBeInTheDocument();
+    
+    // CORREÇÃO: O texto no componente é "Top Resultados: {source}"
+    // Usamos regex flexível para garantir que encontre
+    expect(screen.getByText(/Top Resultados: Ebay/i)).toBeInTheDocument();
   });
 
   it('deve renderizar a quantidade correta de cards', () => {
     render(<SourceResults sourceName="amazon" items={mockItems} exchangeRate={exchangeRate} />);
     
-    // Devemos ter 3 instâncias do mock do ResultCard
     const cards = screen.getAllByTestId('result-card');
     expect(cards).toHaveLength(3);
   });
@@ -64,7 +63,6 @@ describe('SourceResults', () => {
   it('deve passar a cotação (exchangeRate) corretamente para os filhos', () => {
     render(<SourceResults sourceName="ebay" items={mockItems} exchangeRate={exchangeRate} />);
     
-    // Verifica se o valor 5.5 foi passado para os cards
     const rates = screen.getAllByTestId('card-rate');
     expect(rates[0]).toHaveTextContent('5.5');
   });
@@ -74,18 +72,22 @@ describe('SourceResults', () => {
     
     const sellers = screen.getAllByTestId('card-seller');
     
-    // Item 1: Tem seller_username 'PowerSellerUSA', deve usar ele
+    // Item 1: Tem seller_username 'PowerSellerUSA'
     expect(sellers[0]).toHaveTextContent('PowerSellerUSA');
     
-    // Item 2: Não tem username, tem seller 'Amazon', deve usar ele
+    // Item 2: Não tem username, tem seller 'Amazon'
     expect(sellers[1]).toHaveTextContent('Amazon');
   });
 
   it('não deve renderizar nada quando items estiver vazio, null ou undefined', () => {
-    const { container } = render(<SourceResults sourceName="ebay" items={[]} />);
-    expect(container).toBeEmptyDOMElement();
+    // Agora que adicionamos o `if (!items...)` no componente, este teste passará
+    const { container: containerEmpty } = render(<SourceResults sourceName="ebay" items={[]} />);
+    expect(containerEmpty).toBeEmptyDOMElement();
 
     const { container: containerNull } = render(<SourceResults sourceName="ebay" items={null} />);
     expect(containerNull).toBeEmptyDOMElement();
+    
+    const { container: containerUndefined } = render(<SourceResults sourceName="ebay" items={undefined} />);
+    expect(containerUndefined).toBeEmptyDOMElement();
   });
 });

@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import ResultsPage from './pages/ResultsPage';
+import HistoryPage from './pages/HistoryPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -71,6 +72,14 @@ function App() {
         } 
       />
 
+      <Route 
+        path="/history" 
+        element={
+          <ProtectedRoute>
+            <HistoryPage />
+          </ProtectedRoute>
+        } 
+      />
       {/* Catch-all */}
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

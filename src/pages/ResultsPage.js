@@ -22,22 +22,39 @@ function ResultsPage() {
   const [rateTimestamp, setRateTimestamp] = useState(null); 
   const [rateLoading, setRateLoading] = useState(false);
 
-  // --- Efeito: Carga Inicial ---
+  // --- PROTEÇÃO DE ROTA ---
   useEffect(() => {
-    if (comparisonData?.current_exchange_rate) {
-      setExchangeRate(comparisonData.current_exchange_rate);
-      
-      // Verifica se o backend enviou o horário do cache (exchange_rate_timestamp).
-      // Se sim, usa ele. Se não, usa o horário atual como fallback.
-      if (comparisonData.exchange_rate_timestamp) {
-        setRateTimestamp(new Date(comparisonData.exchange_rate_timestamp));
+    // A. Verifica Autenticação
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/login', { 
+        state: { unauthorized: true },
+        replace: true 
+      });
+      return;
+    }
+
+    // B. Verifica se existem dados (acesso direto pelo link)
+    if (!comparisonData) {
+      // Se o usuário acessar /results direto, redireciona para o dashboard.
+      navigate('/dashboard', { replace: true });
+    }
+  }, [comparisonData, navigate]);
+
+  // --- Efeito: Carga Inicial da Cotação ---
+  useEffect(() => {
+    if (comparisonData) {
+      if (comparisonData.current_exchange_rate) {
+        setExchangeRate(comparisonData.current_exchange_rate);
+        
+        if (comparisonData.exchange_rate_timestamp) {
+          setRateTimestamp(new Date(comparisonData.exchange_rate_timestamp));
+        } else {
+          setRateTimestamp(new Date());
+        }
       } else {
-        setRateTimestamp(new Date());
+        fetchRate(false);
       }
-      
-    } else {
-      // Se não veio dados, busca agora
-      fetchRate(false);
     }
   }, [comparisonData]);
 
@@ -45,13 +62,11 @@ function ResultsPage() {
   const fetchRate = async (forceRefresh = false) => {
     setRateLoading(true);
     try {
-      // Verifica se a função existe no mock/api antes de chamar para evitar crash
       if (api.getExchangeRate) {
         const data = await api.getExchangeRate(forceRefresh);
         if (data && data.rate) {
           setExchangeRate(data.rate);
           
-          // Se a API retornar timestamp, usamos ele. Senão, usamos agora.
           if (data.timestamp) {
               setRateTimestamp(new Date(data.timestamp));
           } else {
@@ -72,21 +87,10 @@ function ResultsPage() {
     return date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
   };
 
+  // --- Renderização Condicional ---
+  // Se não houver dados, retorna null
   if (!comparisonData) {
-    return (
-      <Box sx={{ minHeight: '100vh', backgroundColor: '#f5f7fa' }}>
-        <AppHeader />
-        <Container maxWidth="md" sx={{ py: 8, textAlign: 'center' }}>
-          <Alert severity="error" sx={{ mb: 3 }}>
-            Erro: Dados da comparação não encontrados.
-          </Alert>
-          <Button onClick={() => navigate('/dashboard')} variant="outlined" startIcon={<ArrowBackIcon />}>
-            Voltar ao Dashboard
-          </Button>
-        </Container>
-        <AppFooter />
-      </Box>
-    );
+    return null; 
   }
 
   const bestDeal = comparisonData.overall_best_deal;
