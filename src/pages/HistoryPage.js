@@ -132,6 +132,19 @@ function HistoryPage() {
   };
 
   // -------------------------------------------------------------
+  // FUNÇÃO HELPER DE FORMATAÇÃO
+  // -------------------------------------------------------------
+  const formatCurrencyValue = (value, mode) => {
+    if (value === null || value === undefined) return '';
+    return new Intl.NumberFormat(mode === 'BRL' ? 'pt-BR' : 'en-US', {
+      style: 'currency',
+      currency: mode,
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(value);
+  };
+
+  // -------------------------------------------------------------
   // TOOLTIP
   // -------------------------------------------------------------
   const CustomTooltip = ({ active, payload }) => {
@@ -140,7 +153,7 @@ function HistoryPage() {
     const dp = payload[0].payload || {};
 
     return (
-      <Paper elevation={10} sx={{ p: 2.5, borderRadius: 2 }}>
+      <Paper elevation={10} sx={{ p: 2.5, borderRadius: 2, border: '1px solid #ddd' }}>
         <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
           {dp.displayDate}
         </Typography>
@@ -149,13 +162,13 @@ function HistoryPage() {
           <>
             {dp.amazon_brl && (
               <Typography sx={{ color: "#FF9900", fontWeight: 600 }}>
-                Amazon: R$ {dp.amazon_brl.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                Amazon: {formatCurrencyValue(dp.amazon_brl, 'BRL')}
               </Typography>
             )}
 
             {dp.ebay_brl && (
               <Typography sx={{ color: "#0064D2", fontWeight: 600 }}>
-                eBay: R$ {dp.ebay_brl.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                eBay: {formatCurrencyValue(dp.ebay_brl, 'BRL')}
               </Typography>
             )}
           </>
@@ -166,19 +179,19 @@ function HistoryPage() {
             {/* SOMENTE EBAY EM USD */}
             {dp.ebay_usd && (
               <Typography sx={{ color: "#0064D2", fontWeight: 600 }}>
-                eBay: $ {dp.ebay_usd.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                eBay: {formatCurrencyValue(dp.ebay_usd, 'USD')}
               </Typography>
             )}
           </>
         )}
 
         {dp.exchange_rate && (
-          <Box sx={{ mt: 2, borderTop: "1px solid #ddd", pt: 1 }}>
+          <Box sx={{ mt: 2, borderTop: "1px solid #eee", pt: 1 }}>
             <Typography variant="caption" color="text.secondary">
               Cotação do dólar no dia:
             </Typography>
-            <Typography variant="h6" fontWeight="bold">
-              1 USD = R$ {dp.exchange_rate.toFixed(4)}
+            <Typography variant="body2" fontWeight="bold">
+              1 USD = R$ {dp.exchange_rate.toFixed(2)}
             </Typography>
           </Box>
         )}
@@ -275,25 +288,64 @@ function HistoryPage() {
 
             <Box sx={{ height: 480 }}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData}>
-                  <CartesianGrid strokeDasharray="4 4" stroke="#ddd" />
-                  <XAxis dataKey="displayDate" angle={-45} textAnchor="end" height={70} />
-                  <YAxis />
-                  <Tooltip content={<CustomTooltip />} />
-                  <Legend verticalAlign="top" align="center" />
+                <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                  <XAxis 
+                    dataKey="displayDate" 
+                    angle={-45} 
+                    textAnchor="end" 
+                    height={70} 
+                    tick={{ fill: '#666', fontSize: 12 }}
+                  />
+                  {/* --- CORREÇÃO PRINCIPAL AQUI (EIXO Y) --- */}
+                  <YAxis 
+                    tickFormatter={(value) => formatCurrencyValue(value, currencyMode)}
+                    width={90} // Aumentei a largura para caber "R$ 10.000,00"
+                    tick={{ fill: '#666', fontSize: 12 }}
+                  />
+                  
+                  <Tooltip content={<CustomTooltip />} cursor={{ stroke: '#999', strokeWidth: 1, strokeDasharray: '4 4' }} />
+                  <Legend verticalAlign="top" align="right" wrapperStyle={{ paddingBottom: '20px' }} />
 
                   {/* BRL */}
                   {currencyMode === "BRL" && (
                     <>
-                      <Line type="monotone" name="Amazon" dataKey="amazon_brl" stroke="#FF9900" strokeWidth={4} dot={{ r: 6 }} connectNulls />
-                      <Line type="monotone" name="eBay" dataKey="ebay_brl" stroke="#0064D2" strokeWidth={4} dot={{ r: 6 }} connectNulls />
+                      <Line 
+                        type="monotone" 
+                        name="Amazon" 
+                        dataKey="amazon_brl" 
+                        stroke="#FF9900" 
+                        strokeWidth={3} 
+                        dot={{ r: 4, strokeWidth: 2 }} 
+                        activeDot={{ r: 8 }}
+                        connectNulls 
+                      />
+                      <Line 
+                        type="monotone" 
+                        name="eBay" 
+                        dataKey="ebay_brl" 
+                        stroke="#0064D2" 
+                        strokeWidth={3} 
+                        dot={{ r: 4, strokeWidth: 2 }} 
+                        activeDot={{ r: 8 }}
+                        connectNulls 
+                      />
                     </>
                   )}
 
                   {/* USD — SOMENTE eBay */}
                   {currencyMode === "USD" && (
                     <>
-                      <Line type="monotone" name="eBay" dataKey="ebay_usd" stroke="#0064D2" strokeWidth={4} dot={{ r: 6 }} connectNulls />
+                      <Line 
+                        type="monotone" 
+                        name="eBay" 
+                        dataKey="ebay_usd" 
+                        stroke="#0064D2" 
+                        strokeWidth={3} 
+                        dot={{ r: 4, strokeWidth: 2 }} 
+                        activeDot={{ r: 8 }}
+                        connectNulls 
+                      />
                     </>
                   )}
                 </LineChart>

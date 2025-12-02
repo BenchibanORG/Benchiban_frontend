@@ -178,8 +178,10 @@ function ResultsPage() {
                 priceOriginal={bestDeal.price_original}
                 currencyOriginal={bestDeal.currency_original}
                 priceBrl={bestDeal.price_brl}
+                priceUsd={bestDeal.price_usd}
                 exchangeRate={exchangeRate}
                 isBestPrice={true}
+                source={bestDeal.source}
               />
             </Box>
           </Box>
