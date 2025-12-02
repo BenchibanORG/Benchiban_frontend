@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import ResultsPage from './ResultsPage';
+import api from '../services/api';
 
 // --- Mock dos módulos React Router ---
 jest.mock('react-router-dom', () => ({
@@ -11,7 +12,13 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // --- Mock da API ---
-jest.mock('../services/api');
+jest.mock('../services/api', () => ({
+  __esModule: true,
+  default: {
+    getExchangeRate: jest.fn(),
+    getProductComparison: jest.fn(),
+  },
+}));
 
 // --- Mock dos componentes usados no layout ---
 jest.mock('../components/ResultsCard', () => {
@@ -28,6 +35,7 @@ jest.mock('../components/ResultsCard', () => {
 
 jest.mock('../components/SourceResults', () => {
   return function MockSourceResults({ sourceName, items }) {
+    if (!items) return null;
     return (
       <div data-testid={`source-results-${sourceName}`}>
         <h3>{sourceName}</h3>
@@ -171,13 +179,19 @@ describe('ResultsPage - TDD Tests', () => {
       const data = { ...mockComparisonData };
       delete data.current_exchange_rate;
 
+      // Importante: mockar a API rejeitando ou retornando vazio para não sobrescrever o "---"
+      api.getExchangeRate.mockResolvedValue(null);
+
       require('react-router-dom').useLocation.mockReturnValue({
         state: { data },
       });
 
       renderWithRouter(<ResultsPage />);
 
-      expect(screen.getByText(/R\$ ---/i)).toBeInTheDocument();
+      // waitFor é necessário pois o useEffect vai tentar buscar
+      return waitFor(() => {
+        expect(screen.getByText(/R\$ ---/i)).toBeInTheDocument();
+      });
     });
   });
 
@@ -378,5 +392,115 @@ describe('ResultsPage - Testes de Acessibilidade', () => {
     const h1 = screen.getByRole('heading', { level: 1 });
     expect(h1).toBeInTheDocument();
     expect(h1.textContent).toContain('Resultados para');
+  });
+});
+
+// ---------------------------------------------------------------------------
+//         Testes de Lógica de Inicialização e Cotação (TRECHO CORRIGIDO)
+// ---------------------------------------------------------------------------
+
+describe('ResultsPage - Lógica de Inicialização e Cotação', () => {
+  const mockNavigate = jest.fn();
+
+  const baseData = {
+    overall_best_deal: { title: 'GPU Test', price_brl: 1000 },
+    results_by_source: {},
+  };
+
+  const renderWithRouter = (component) =>
+    render(<BrowserRouter>{component}</BrowserRouter>);
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    require('react-router-dom').useNavigate.mockReturnValue(mockNavigate);
+  });
+
+  // 1. Testa o redirecionamento se !comparisonData
+  test('deve redirecionar para dashboard se comparisonData (location.state) for nulo', async () => {
+    // --- CORREÇÃO: Mock do localStorage para simular usuário logado ---
+    // Precisamos simular que existe um token, senão o componente redireciona para /login
+    // antes de verificar se comparisonData é nulo.
+    const getItemSpy = jest.spyOn(Storage.prototype, 'getItem').mockReturnValue('fake-token');
+
+    // Simula acesso direto sem state (comparisonData = null)
+    require('react-router-dom').useLocation.mockReturnValue({ state: null });
+
+    renderWithRouter(<ResultsPage />);
+
+    await waitFor(() => {
+      // Agora, como está "logado", ele deve cair no if(!comparisonData) e ir para dashboard
+      expect(mockNavigate).toHaveBeenCalledWith('/dashboard', { replace: true });
+    });
+
+    // Boa prática: restaurar o mock original após o teste
+    getItemSpy.mockRestore();
+  });
+
+  // 2. Testa uso da cotação vinda do comparisonData
+  test('deve usar current_exchange_rate do comparisonData e NÃO chamar a API', () => {
+    const dataWithRate = { 
+      ...baseData, 
+      current_exchange_rate: 5.25,
+      exchange_rate_timestamp: '2023-10-01T10:00:00Z'
+    };
+
+    require('react-router-dom').useLocation.mockReturnValue({
+      state: { data: dataWithRate, query: 'Teste' },
+    });
+
+    renderWithRouter(<ResultsPage />);
+
+    expect(api.getExchangeRate).not.toHaveBeenCalled();
+  });
+
+  // 3. Testa fallback para API quando comparisonData não tem taxa
+  test('deve buscar cotação via API se comparisonData não tiver current_exchange_rate', async () => {
+    const dataWithoutRate = { 
+      ...baseData, 
+      current_exchange_rate: null 
+    };
+
+    require('react-router-dom').useLocation.mockReturnValue({
+      state: { data: dataWithoutRate, query: 'Teste' },
+    });
+
+    // Mock da resposta da API com estrutura correta
+    api.getExchangeRate.mockResolvedValue({ 
+      rate: 6.05, 
+      timestamp: new Date().toISOString() 
+    });
+
+    renderWithRouter(<ResultsPage />);
+
+    await waitFor(() => {
+      expect(api.getExchangeRate).toHaveBeenCalledWith(false); 
+    });
+  });
+
+  // 4. Testa tratamento de erro da API
+  test('deve logar erro no console se a API de cotação falhar', async () => {
+    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+
+    const dataWithoutRate = { ...baseData, current_exchange_rate: null };
+
+    require('react-router-dom').useLocation.mockReturnValue({
+      state: { data: dataWithoutRate, query: 'Teste' },
+    });
+
+    // Simula falha na API
+    api.getExchangeRate.mockRejectedValue(new Error('API Down'));
+
+    renderWithRouter(<ResultsPage />);
+
+    await waitFor(() => {
+      expect(api.getExchangeRate).toHaveBeenCalled();
+    });
+
+    // Aguarda o console.error ser chamado
+    await waitFor(() => {
+        expect(consoleSpy).toHaveBeenCalledWith("Erro ao atualizar cotação:", expect.any(Error));
+    });
+    
+    consoleSpy.mockRestore();
   });
 });

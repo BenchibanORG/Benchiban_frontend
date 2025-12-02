@@ -45,8 +45,12 @@ const GPU_OPTIONS = [
   "NVIDIA RTX 4080 Super 16GB",
   "NVIDIA RTX 5090 32GB",
   "NVIDIA RTX 6000 Ada 48GB",
-  "NVIDIA RTX A6000 48GB"
-].sort();
+  "NVIDIA RTX A6000 48GB",
+];
+
+const GPU_OPTIONS_SORTED = [...GPU_OPTIONS].sort((a, b) =>
+  a.localeCompare(b, "pt-BR", { sensitivity: "base" })
+);
 
 function HistoryPage() {
   const [selectedGpu, setSelectedGpu] = useState('');
@@ -226,7 +230,7 @@ function HistoryPage() {
               onChange={(e) => handleSelectGpu(e.target.value)}
               data-testid="gpu-select"
             >
-              {GPU_OPTIONS.map((gpu) => (
+              {GPU_OPTIONS_SORTED.map((gpu) => (
                 <MenuItem key={gpu} value={gpu}>{gpu}</MenuItem>
               ))}
             </Select>
