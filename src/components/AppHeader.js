@@ -1,6 +1,5 @@
-// src/components/AppHeader.js
 import React from 'react';
-import { AppBar, Toolbar, Box, Button, IconButton } from '@mui/material';
+import { AppBar, Toolbar, Box, Button} from '@mui/material';
 import { Logout, History, ArrowBack } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
 import benchibanLogo from '../assets/images/benchibanlogo.png';
