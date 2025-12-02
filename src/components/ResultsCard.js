@@ -10,12 +10,13 @@ function ResultCard({
   priceOriginal,            // Preço original (normalmente USD no eBay)
   currencyOriginal,         // Pode vir errado do eBay (ex: 'BRL')
   priceBrl,                 // Preço já convertido (fallback)
+  priceUsd,                 // <--- ADICIONADO: Valor exato em Dólar vindo do banco
   exchangeRate,             // Cotação atual
   link,
   seller,
   rating,
   isBestPrice = false,
-  source,                   // <--- NOVA PROPS OPCIONAL: 'eBay', 'Kabum', etc (se vier do backend)
+  source,                   
 }) {
   // === REGRA DE OURO: SE FOR DO EBAY → SEMPRE É USD ===
   const isFromEbay = source?.toLowerCase().includes('ebay') || 
@@ -49,9 +50,13 @@ function ResultCard({
       displayMainPrice = 'Cotação indisponível';
     }
 
+    // === CORREÇÃO AQUI ===
     // Sempre mostra o preço original em USD (porque é do eBay!)
-    if (priceOriginal) {
-      displaySecondaryPrice = Number(priceOriginal).toLocaleString('en-US', {
+    // Prioriza 'priceUsd' (banco), se não tiver usa 'priceOriginal' (scraping)
+    const usdValue = priceUsd ?? priceOriginal;
+
+    if (usdValue) {
+      displaySecondaryPrice = Number(usdValue).toLocaleString('en-US', {
         style: 'currency',
         currency: 'USD'
       });
@@ -72,6 +77,7 @@ function ResultCard({
   const renderRating = () => {
     if (!rating && rating !== 0) return null;
 
+    // Se a nota for maior que 5 (ex: 98%), exibe como porcentagem/texto
     if (rating > 5) {
       return (
         <Chip
@@ -84,6 +90,7 @@ function ResultCard({
       );
     }
 
+    // Se for escala de 0 a 5, exibe estrelas
     return (
       <Box display="flex" alignItems="center" mt={1}>
         <Rating value={parseFloat(rating)} precision={0.1} readOnly size="small" />

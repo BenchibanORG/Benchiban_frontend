@@ -18,6 +18,7 @@ import HeroSection from '../components/HeroSection';
 import HowItWorks from '../components/HowItWorks';
 import AppFooter from '../components/AppFooter';
 import { getProductComparison } from '../services/api';
+import SuggestionSection from '../components/SuggestionSection';
 
 // --- IMPORTS DE IMAGENS ---
 import imgRtx5090 from '../assets/images/rtx5090.jpg';
@@ -325,7 +326,7 @@ function DashboardPage() {
                 key={gpu.id} 
                 xs={12}     // Mobile: 1 por linha
                 sm={6}      // Tablet: 2 por linha
-                md={4}      // Desktop: 3 por linha (Gera o layout 3-3-3-1 para 10 itens)
+                md={4}      // Desktop: 3 por linha
                 sx={{ display: 'flex' }}
               >
                 <Box 
@@ -356,7 +357,7 @@ function DashboardPage() {
                   <GpuCard
                     name={gpu.name}
                     description={gpu.description}
-                    techInfo={gpu.techInfo} // <--- ADICIONADO AQUI
+                    techInfo={gpu.techInfo}
                     image={gpu.image}
                     onClick={() => !isLoading && handleCardClick(gpu.name)}
                     sx={{
@@ -385,6 +386,10 @@ function DashboardPage() {
         </Grid>
 
         <HowItWorks />
+        
+        {/* --- SEÇÃO DE SUGESTÃO ADICIONADA --- */}
+        <SuggestionSection />
+
       </Container>
       <AppFooter />
     </Box>
